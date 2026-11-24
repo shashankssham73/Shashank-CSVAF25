@@ -1,0 +1,199 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="749" viewBox="0 0 1560 749" font-family="-apple-system,'Helvetica Neue',Arial,sans-serif">
+<defs>
+<marker id="ah-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0.5 L9.5,5 L0,9.5 z" fill="#14171c"/></marker>
+<marker id="ah-loop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0.5 L9.5,5 L0,9.5 z" fill="#d9541c"/></marker>
+<marker id="ah-mute" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0.5 L9.5,5 L0,9.5 z" fill="#6b7280"/></marker>
+</defs>
+<rect width="1560" height="749" fill="#ffffff"/>
+<text x="40" y="38" font-size="19" font-weight="700" fill="#14171c">Block diagram — telemetry- and voice-driven feedback visualizer</text>
+<text x="40" y="60" font-size="12.5" fill="#6b7280">Solid = forward signal path.  Dashed orange = closed loop.  Bracketed codes are the operation numbers in the signals table.</text>
+<rect x="40" y="92" width="230" height="422" fill="#f6f7f9" stroke="#ccd2dc" rx="6"/>
+<rect x="40" y="92" width="230" height="30" fill="#1d4ed8" rx="6"/>
+<rect x="40" y="116" width="230" height="6" fill="#1d4ed8"/>
+<text x="51" y="112" font-size="12" font-weight="700" fill="#fff" letter-spacing="1.4">A · SENSE</text>
+<rect x="310" y="92" width="300" height="422" fill="#f6f7f9" stroke="#ccd2dc" rx="6"/>
+<rect x="310" y="92" width="300" height="30" fill="#6d28d9" rx="6"/>
+<rect x="310" y="116" width="300" height="6" fill="#6d28d9"/>
+<text x="321" y="112" font-size="12" font-weight="700" fill="#fff" letter-spacing="1.4">B · ANALYSE</text>
+<rect x="650" y="92" width="250" height="422" fill="#f6f7f9" stroke="#ccd2dc" rx="6"/>
+<rect x="650" y="92" width="250" height="30" fill="#a4560a" rx="6"/>
+<rect x="650" y="116" width="250" height="6" fill="#a4560a"/>
+<text x="661" y="112" font-size="12" font-weight="700" fill="#fff" letter-spacing="1.4">C · STATE</text>
+<rect x="940" y="92" width="300" height="422" fill="#f6f7f9" stroke="#ccd2dc" rx="6"/>
+<rect x="940" y="92" width="300" height="30" fill="#0b7a6a" rx="6"/>
+<rect x="940" y="116" width="300" height="6" fill="#0b7a6a"/>
+<text x="951" y="112" font-size="12" font-weight="700" fill="#fff" letter-spacing="1.4">D · FORM</text>
+<rect x="1280" y="92" width="240" height="422" fill="#f6f7f9" stroke="#ccd2dc" rx="6"/>
+<rect x="1280" y="92" width="240" height="30" fill="#be185d" rx="6"/>
+<rect x="1280" y="116" width="240" height="6" fill="#be185d"/>
+<text x="1291" y="112" font-size="12" font-weight="700" fill="#fff" letter-spacing="1.4">E · OUT</text>
+<rect x="50" y="133" width="210" height="57" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="50" y="133" width="3.5" height="57" fill="#1d4ed8" rx="1.5"/>
+<text x="61" y="153" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">MIC</text>
+<text x="61" y="166" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">1 ch x 44.1 kHz</text>
+<text x="61" y="179" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">array not exposed</text>
+<rect x="50" y="201" width="210" height="70" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="50" y="201" width="3.5" height="70" fill="#1d4ed8" rx="1.5"/>
+<text x="61" y="221" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">TELEMETRY DAEMON</text>
+<text x="61" y="234" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">43 ch / 7 sources</text>
+<text x="61" y="247" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">0.3-5 Hz -&gt; 30 Hz frame</text>
+<text x="61" y="260" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">~2% of one core</text>
+<rect x="50" y="282" width="210" height="57" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="50" y="282" width="3.5" height="57" fill="#1d4ed8" rx="1.5"/>
+<text x="61" y="302" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">POINTER</text>
+<text x="61" y="315" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">cursor / scroll / click</text>
+<text x="61" y="328" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">slide distance = 0..1</text>
+<rect x="50" y="350" width="210" height="57" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="50" y="350" width="3.5" height="57" fill="#1d4ed8" rx="1.5"/>
+<text x="61" y="370" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">FILESYSTEM GRAPH</text>
+<text x="61" y="383" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">depth / fan-out / mdls</text>
+<text x="61" y="396" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">event-driven</text>
+<rect x="50" y="418" width="210" height="83" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="50" y="418" width="3.5" height="83" fill="#1d4ed8" rx="1.5"/>
+<text x="61" y="438" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">SOURCES  (no privileges)</text>
+<text x="61" y="451" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">vm_stat . iostat . nettop</text>
+<text x="61" y="464" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">ioreg . FSEvents . top</text>
+<text x="61" y="477" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">+ native input probe</text>
+<text x="61" y="490" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">root-only paths excluded</text>
+<rect x="320" y="133" width="280" height="109" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="320" y="133" width="3.5" height="109" fill="#6d28d9" rx="1.5"/>
+<text x="331" y="153" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">AUDIO-RATE DSP   44.1 kHz</text>
+<rect x="565.4" y="139" width="18.6" height="15" rx="7.5" fill="#6d28d9" opacity="0.14"/>
+<text x="574.6999999999999" y="150" font-size="9" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6d28d9" text-anchor="middle">V</text>
+<text x="331" y="166" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">STFT 2048 / 75%  -&gt; tilt, centroid</text>
+<text x="331" y="179" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">autocorrelation  -&gt; f0  (50-400 Hz)</text>
+<text x="331" y="192" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">cepstrum FFT-log-iFFT -&gt; formants</text>
+<text x="331" y="205" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">Butterworth bank -&gt; band energy</text>
+<text x="331" y="218" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">matched filter   -&gt; utterance onset</text>
+<text x="331" y="231" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">STFT -&gt; iSTFT    -&gt; spectral freeze</text>
+<rect x="320" y="253" width="280" height="135" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="320" y="253" width="3.5" height="135" fill="#6d28d9" rx="1.5"/>
+<text x="331" y="273" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">CONTROL-RATE DSP   30 Hz</text>
+<rect x="565.4" y="259" width="18.6" height="15" rx="7.5" fill="#6d28d9" opacity="0.14"/>
+<text x="574.6999999999999" y="270" font-size="9" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6d28d9" text-anchor="middle">T</text>
+<text x="331" y="286" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">condition: d/dt, log1p, detrend, Hann</text>
+<text x="331" y="299" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">IIR envelope / one-euro filter</text>
+<text x="331" y="312" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">STFT 256 / 50%   -&gt; centroid, flatness</text>
+<text x="331" y="325" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">STFT -&gt; iSTFT    -&gt; 0.1-0.3 Hz breath</text>
+<text x="331" y="338" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">autocorrelation  -&gt; task loop period</text>
+<text x="331" y="351" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">cross-corr + lag -&gt; causal order</text>
+<text x="331" y="364" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">1-D convolution  -&gt; event envelope</text>
+<text x="331" y="377" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">Lomb-Scargle     -&gt; irregular channels</text>
+<rect x="660" y="133" width="230" height="57" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="660" y="133" width="3.5" height="57" fill="#a4560a" rx="1.5"/>
+<text x="671" y="153" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">ASR  (Whisper)</text>
+<text x="671" y="166" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">command layer only</text>
+<text x="671" y="179" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">gated by matched filter</text>
+<rect x="660" y="201" width="230" height="57" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="660" y="201" width="3.5" height="57" fill="#a4560a" rx="1.5"/>
+<text x="671" y="221" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">TASK EXECUTOR</text>
+<text x="671" y="234" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">find PDFs -&gt; convert x3</text>
+<text x="671" y="247" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">-&gt; write -&gt; zip</text>
+<rect x="660" y="269" width="230" height="70" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="660" y="269" width="3.5" height="70" fill="#a4560a" rx="1.5"/>
+<text x="671" y="289" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">TASK FSM</text>
+<text x="671" y="302" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">scan / convert / write / zip</text>
+<text x="671" y="315" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">transitions from lag</text>
+<text x="671" y="328" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">structure (cross-corr)</text>
+<rect x="660" y="350" width="230" height="70" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="660" y="350" width="3.5" height="70" fill="#a4560a" rx="1.5"/>
+<text x="671" y="370" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">PARAMETER VECTOR</text>
+<text x="671" y="383" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">zoom . rotation . gain</text>
+<text x="671" y="396" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">blur . hue . branch angle</text>
+<text x="671" y="409" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">one regime per phase</text>
+<rect x="950" y="133" width="280" height="70" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="950" y="133" width="3.5" height="70" fill="#0b7a6a" rx="1.5"/>
+<text x="961" y="153" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">LOG-POLAR TRANSFORM</text>
+<text x="961" y="166" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">(r, th) -&gt; (log r, th)</text>
+<text x="961" y="179" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">zoom+rotate becomes</text>
+<text x="961" y="192" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">pure translation</text>
+<rect x="950" y="214" width="280" height="57" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="950" y="214" width="3.5" height="57" fill="#0b7a6a" rx="1.5"/>
+<text x="961" y="234" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">VIDEO FEEDBACK ACCUMULATOR</text>
+<rect x="1155.8" y="220" width="58.199999999999996" height="15" rx="7.5" fill="#0b7a6a" opacity="0.14"/>
+<text x="1184.8999999999999" y="231" font-size="9" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#0b7a6a" text-anchor="middle">PRIMARY</text>
+<text x="961" y="247" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">affine warp of frame t-1</text>
+<text x="961" y="260" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">+ gain + nonlinearity</text>
+<rect x="950" y="282" width="280" height="70" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="950" y="282" width="3.5" height="70" fill="#0b7a6a" rx="1.5"/>
+<text x="961" y="302" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">2-D CONVOLUTION</text>
+<text x="961" y="315" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">Gaussian = diffusion</text>
+<text x="961" y="328" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">unsharp  = reaction</text>
+<text x="961" y="341" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">-&gt; Gray-Scott substrate</text>
+<rect x="950" y="363" width="280" height="83" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="950" y="363" width="3.5" height="83" fill="#0b7a6a" rx="1.5"/>
+<text x="961" y="383" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">MORPHOGENESIS  (rules)</text>
+<text x="961" y="396" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">space colonization</text>
+<text x="961" y="409" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">phyllotaxis / L-system</text>
+<text x="961" y="422" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">attractors &lt;- filesystem</text>
+<text x="961" y="435" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">improvises on the feedback</text>
+<rect x="950" y="457" width="280" height="57" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="950" y="457" width="3.5" height="57" fill="#0b7a6a" rx="1.5"/>
+<text x="961" y="477" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">COMPOSITE</text>
+<text x="961" y="490" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">+ thumbnails, labels</text>
+<text x="961" y="503" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">flash limiter &lt;= 3/s</text>
+<rect x="1290" y="133" width="220" height="44" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="1290" y="133" width="3.5" height="44" fill="#be185d" rx="1.5"/>
+<text x="1301" y="153" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">DISPLAY</text>
+<text x="1301" y="166" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">60 Hz</text>
+<rect x="1290" y="188" width="220" height="44" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="1290" y="188" width="3.5" height="44" fill="#be185d" rx="1.5"/>
+<text x="1301" y="208" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">FRAME READBACK</text>
+<text x="1301" y="221" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">GPU -&gt; CPU, decimated</text>
+<rect x="1290" y="243" width="220" height="57" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="1290" y="243" width="3.5" height="57" fill="#be185d" rx="1.5"/>
+<text x="1301" y="263" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">2-D FFT</text>
+<text x="1301" y="276" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">radial power spectrum</text>
+<text x="1301" y="289" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">-&gt; AGC, edge of chaos</text>
+<rect x="1290" y="311" width="220" height="57" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="1290" y="311" width="3.5" height="57" fill="#be185d" rx="1.5"/>
+<text x="1301" y="331" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">PHASE CORRELATION</text>
+<text x="1301" y="344" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">FFT -&gt; iFFT -&gt; peak</text>
+<text x="1301" y="357" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">-&gt; measured optical flow</text>
+<rect x="1290" y="379" width="220" height="57" fill="#fff" stroke="#ccd2dc" rx="4"/>
+<rect x="1290" y="379" width="3.5" height="57" fill="#be185d" rx="1.5"/>
+<text x="1301" y="399" font-size="11" font-weight="700" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#14171c">1-D FFT  (angular)</text>
+<text x="1301" y="412" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">dominant wavenumber</text>
+<text x="1301" y="425" font-size="9.8" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">-&gt; symmetry order</text>
+<path d="M260,161.5 L320,161.5" fill="none" stroke="#14171c" stroke-width="1.6" marker-end="url(#ah-ink)"/>
+<text x="290" y="155.5" font-size="9.5" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280" text-anchor="middle">waveform</text>
+<path d="M260,236 C290,236 300,306.5 320,306.5" fill="none" stroke="#14171c" stroke-width="1.6" marker-end="url(#ah-ink)"/>
+<path d="M260,310.5 C290,310.5 300,334.5 320,334.5" fill="none" stroke="#14171c" stroke-width="1.6" marker-end="url(#ah-ink)"/>
+<text x="290" y="296.5" font-size="9.5" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280" text-anchor="end">43 ch</text>
+<path d="M260,378.5 C292,378.5 300,486 322,486 L925,486 L925,422.5 L950,422.5" fill="none" stroke="#14171c" stroke-width="1.4" stroke-dasharray="1 3" marker-end="url(#ah-ink)"/>
+<text x="620" y="478" font-size="9.5" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280" text-anchor="middle">directory structure -&gt; attractor cloud  (not a time series)</text>
+<path d="M600,187.5 L660,161.5" fill="none" stroke="#14171c" stroke-width="1.6" marker-end="url(#ah-ink)"/>
+<text x="630" y="154.5" font-size="9.5" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280" text-anchor="middle">onset gate</text>
+<path d="M600,320.5 C630,320.5 630,304 660,304" fill="none" stroke="#14171c" stroke-width="1.6" marker-end="url(#ah-ink)"/>
+<text x="628" y="330" font-size="9.5" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280" text-anchor="end">lag</text>
+<path d="M600,350.5 C634,350.5 626,385 660,385" fill="none" stroke="#14171c" stroke-width="1.6" marker-end="url(#ah-ink)"/>
+<path d="M775,190 L775,201" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#ah-mute)"/>
+<path d="M775,258 L775,269" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#ah-mute)"/>
+<path d="M775,339 L775,350" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#ah-mute)"/>
+<path d="M890,385 C918,385 914,168 950,168" fill="none" stroke="#0b7a6a" stroke-width="1.5" opacity="0.85" marker-end="url(#ah-ink)"/>
+<path d="M890,385 C918,385 914,242.5 950,242.5" fill="none" stroke="#0b7a6a" stroke-width="1.5" opacity="0.85" marker-end="url(#ah-ink)"/>
+<path d="M890,385 C918,385 914,317 950,317" fill="none" stroke="#0b7a6a" stroke-width="1.5" opacity="0.85" marker-end="url(#ah-ink)"/>
+<path d="M890,385 C918,385 914,404.5 950,404.5" fill="none" stroke="#0b7a6a" stroke-width="1.5" opacity="0.85" marker-end="url(#ah-ink)"/>
+<text x="920" y="339" font-size="9.5" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#0b7a6a" text-anchor="middle">params</text>
+<path d="M1090,203 L1090,214" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#ah-mute)"/>
+<path d="M1090,271 L1090,282" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#ah-mute)"/>
+<path d="M1090,352 L1090,363" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#ah-mute)"/>
+<path d="M1090,446 L1090,457" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#ah-mute)"/>
+<path d="M1224,404.5 C1248,404.5 1248,242.5 1224,242.5" fill="none" stroke="#0b7a6a" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#ah-ink)"/>
+<path d="M1230,485.5 L1258,485.5 L1258,155 L1290,155" fill="none" stroke="#14171c" stroke-width="1.6" marker-end="url(#ah-ink)"/>
+<path d="M1400,177 L1400,188" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#ah-mute)"/>
+<path d="M1400,232 L1400,243" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#ah-mute)"/>
+<path d="M1400,300 L1400,311" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#ah-mute)"/>
+<path d="M1400,368 L1400,379" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#ah-mute)"/>
+<path d="M1310,514 L1310,560 L980,560 L980,514" fill="none" stroke="#d9541c" stroke-width="1.7" stroke-dasharray="7 5" marker-end="url(#ah-loop)"/>
+<text x="1145" y="553" font-size="10" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" font-weight="700" fill="#d9541c" text-anchor="middle">L1  frame spectrum -&gt; AGC + warp check  [ops 18-20]</text>
+<path d="M710,514 L710,594 L80,594 L80,514" fill="none" stroke="#d9541c" stroke-width="1.7" stroke-dasharray="7 5" marker-end="url(#ah-loop)"/>
+<text x="700" y="587" font-size="10" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" font-weight="700" fill="#d9541c" text-anchor="end">L2  task execution -&gt; real machine load -&gt; telemetry  (signal IS the work)</text>
+<path d="M948,514 L948,628 L160,628 L160,514" fill="none" stroke="#d9541c" stroke-width="1.7" stroke-dasharray="7 5" marker-end="url(#ah-loop)"/>
+<text x="938" y="621" font-size="10" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" font-weight="700" fill="#d9541c" text-anchor="end">L3  renderer GPU/power cost -&gt; telemetry  (self-referential)</text>
+<path d="M1400,514 L1400,662 L240,662 L240,514" fill="none" stroke="#d9541c" stroke-width="1.7" stroke-dasharray="7 5" marker-end="url(#ah-loop)"/>
+<text x="820" y="655" font-size="10" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" font-weight="700" fill="#d9541c" text-anchor="middle">L4  human: sees display -&gt; speaks / slides -&gt; new task   [ops 7, 9]</text>
+<text x="40" y="706" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">V = 44.1 kHz audio-rate path, the only Nyquist-comfortable signal in the system.   T = 0.3-5 Hz control-rate path, usable band 0-2.5 Hz without root.</text>
+<text x="40" y="723" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#6b7280">Objective 1 = columns A-B-D-E.  Objective 2 adds the voice path (A.MIC -> B.V -> C.ASR) and the morphogenesis layout in D.</text>
+<text x="1520" y="723" font-size="10" font-family="ui-monospace,'SF Mono',Menlo,Consolas,monospace" fill="#ccd2dc" text-anchor="end">figures/make-block-diagram.js</text>
+</svg>

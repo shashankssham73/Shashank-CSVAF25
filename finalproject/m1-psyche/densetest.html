@@ -1,0 +1,88 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>dense source test</title>
+<style>body{background:#0b0e12;color:#cfe;font:13px ui-monospace,Menlo,monospace;padding:18px}
+.ok{color:#6fbf86}.bad{color:#cf6b5e}canvas{border:1px solid #2c343d;margin:6px;width:300px}</style>
+</head><body><pre id="o">…</pre><div id="c"></div>
+<script>window.onerror=(m,s,l,c)=>{document.getElementById('o').textContent='CRASH: '+m;
+ fetch('/selftest',{method:'POST',headers:{'Content-Type':'application/json'},
+ body:JSON.stringify({suite:'CRASH',summary:'0/0',tests:[{name:'threw',pass:false,detail:String(m)}]})});};</script>
+<script type="module">
+import { ImageChain } from './chain.js';
+import { PAL } from './render.js';
+const r = { suite:'dense-source', tests:[] };
+const T=(n,p,d)=>{r.tests.push({name:n,pass:p,detail:d});
+  document.getElementById('o').innerHTML = r.tests.map(t=>
+   `<span class="${t.pass?'ok':'bad'}">${t.pass?' ok  ':'FAIL '}${t.name}</span>\n       ${t.detail}`).join('\n');};
+
+const W=1280,H=800;
+const mk=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;return c;};
+const mean = ctx => { const d=ctx.getImageData(0,0,W,H).data; let s=0;
+  for(let i=0;i<d.length;i+=4) s += (d[i]*0.3+d[i+1]*0.5+d[i+2]*0.2);
+  return s/(d.length/4)/255; };
+
+// Two sources with the SAME chain settings:
+//  sparse   = the machine map / mock desktop: mostly black, a little bright
+//  dense    = a screen capture: luma everywhere
+function run(kind, frames=30) {
+  const chain = new ImageChain();
+  const out = mk(), ctx = out.getContext('2d',{willReadFrequently:true});
+  const G = { 'scan.amp':48, 'scan.persp':0.45, 'fb.gain':0.9, 'fb.zoom':1.002, 'fb.rot':0.0006 };
+  const draw = (c,w,h) => {
+    c.setTransform(1,0,0,1,0,0);
+    if (kind==='sparse') {
+      c.fillStyle='#000'; c.fillRect(0,0,w,h);
+      c.fillStyle='rgba(40,200,255,0.8)';
+      for(let k=0;k<40;k++) c.fillRect((k*97)%w, (k*53)%h, 60, 3);   // a few bright strokes
+    } else {
+      // a photographic frame: luma everywhere, mid grey with structure
+      const g = c.createLinearGradient(0,0,w,h);
+      g.addColorStop(0,'#5a6472'); g.addColorStop(1,'#8e9aa8');
+      c.fillStyle=g; c.fillRect(0,0,w,h);
+      c.fillStyle='rgba(255,255,255,0.25)';
+      for(let k=0;k<80;k++) c.fillRect((k*131)%w,(k*71)%h,180,14);
+    }
+  };
+  for (let f=0; f<frames; f++) {
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.fillStyle = PAL.wall; ctx.fillRect(0,0,W,H);
+    chain.render(draw, G, ctx, W, H, 1, f/60);
+  }
+  return { out: mean(ctx), srcMean: chain.scan.srcMean, gain: chain.scan.srcGain };
+}
+const S = run('sparse'), D = run('dense');
+const sparse = S.out, dense = D.out;
+T('the compensator measures source density',
+  S.srcMean < D.srcMean, `sparse source ${S.srcMean.toFixed(3)}, dense source ${D.srcMean.toFixed(3)} mean luma`);
+T('a sparse source is left alone (gain ~1)', S.gain > 0.85,
+  `gain ${S.gain.toFixed(3)} — the machine map and mock desktop are unchanged`);
+T('a dense source is pulled back', D.gain < 0.4,
+  `gain ${D.gain.toFixed(3)} — a screen capture is scaled down automatically`);
+T('a sparse source stays legible', sparse > 0.01 && sparse < 0.45,
+  `mean luma ${sparse.toFixed(3)} — the machine map and mock desktop look like this`);
+T('a DENSE source does not wash out', dense < 0.55,
+  `mean luma ${dense.toFixed(3)} — a screen capture looks like this`);
+T('the two now land in a comparable range', dense < sparse * 3.5,
+  `dense/sparse = ${(dense/Math.max(1e-6,sparse)).toFixed(1)}x  (was 7.6x before the fix)`);
+// turning it off must restore the old, broken behaviour — proving the
+// compensator is what changed and not something else
+{
+  const chain = new (await import('./chain.js')).ImageChain();
+  chain.scan.autoGain = false;
+  const out = mk(), ctx = out.getContext('2d',{willReadFrequently:true});
+  const G = { 'scan.amp':48, 'scan.persp':0.45, 'fb.gain':0.9, 'fb.zoom':1.002, 'fb.rot':0.0006 };
+  const draw = (c,w,h) => { c.setTransform(1,0,0,1,0,0);
+    const g=c.createLinearGradient(0,0,w,h); g.addColorStop(0,'#5a6472'); g.addColorStop(1,'#8e9aa8');
+    c.fillStyle=g; c.fillRect(0,0,w,h); c.fillStyle='rgba(255,255,255,0.25)';
+    for(let k=0;k<80;k++) c.fillRect((k*131)%w,(k*71)%h,180,14); };
+  for (let f=0; f<30; f++) { ctx.setTransform(1,0,0,1,0,0);
+    ctx.fillStyle=PAL.wall; ctx.fillRect(0,0,W,H); chain.render(draw,G,ctx,W,H,1,f/60); }
+  const off = mean(ctx);
+  T('switching the compensator off restores the washout', off > dense * 1.8,
+    `auto on ${dense.toFixed(3)} vs auto off ${off.toFixed(3)} mean luma`);
+}
+
+const p = r.tests.filter(t=>t.pass).length;
+r.summary = `${p}/${r.tests.length}`;
+document.getElementById('o').innerHTML += `\n\n${r.summary}`;
+fetch('/selftest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)});
+</script></body></html>

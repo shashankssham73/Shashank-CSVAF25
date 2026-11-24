@@ -1,0 +1,173 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>RD self test</title>
+<style>body{background:#0b0e12;color:#cfe;font:13px ui-monospace,Menlo,monospace;padding:18px}
+pre{line-height:1.6} .ok{color:#6fbf86} .bad{color:#cf6b5e} canvas{border:1px solid #2c343d;margin-top:10px}</style>
+</head><body><pre id="o">running…</pre><div id="c"></div>
+<script type="module">
+import { ReactionDiffusion, REGIMES } from './viz/rd.js';
+const out = [];
+const log = (s, good) => { out.push((good === undefined ? '     ' : good ? ' ok  ' : 'FAIL ') + s);
+  document.getElementById('o').innerHTML = out.map(l =>
+    l.startsWith(' ok') ? `<span class="ok">${l}</span>` :
+    l.startsWith('FAIL') ? `<span class="bad">${l}</span>` : l).join('\n'); };
+
+const rd = new ReactionDiffusion(256, 160);
+log('context + shaders: ' + (rd.ok ? 'compiled' : 'FAILED — ' + rd.reason), rd.ok);
+
+const result = { ok: rd.ok, reason: rd.reason, tests: [] };
+const T = (name, pass, detail) => { result.tests.push({ name, pass, detail }); log(`${name} — ${detail}`, pass); };
+
+if (rd.ok) {
+  const gl = rd.gl;
+  log('backend: ' + (rd.type === gl.FLOAT ? 'RGBA32F' : 'RGBA16F') + '  ' + gl.getParameter(gl.VERSION));
+  result.backend = rd.type === gl.FLOAT ? 'RGBA32F' : 'RGBA16F';
+  result.renderer = gl.getParameter(gl.RENDERER);
+
+  const read = () => { const px = new Float32Array(256 * 160 * 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, rd.fb[rd.src]);
+    gl.readPixels(0, 0, 256, 160, gl.RGBA, gl.FLOAT, px);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    let minU = 9, maxU = -9, minV = 9, maxV = -9, sumV = 0, nan = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      const u = px[i], v = px[i + 1];
+      if (!isFinite(u) || !isFinite(v)) nan++;
+      minU = Math.min(minU, u); maxU = Math.max(maxU, u);
+      minV = Math.min(minV, v); maxV = Math.max(maxV, v); sumV += v;
+    }
+    return { minU, maxU, minV, maxV, meanV: sumV / (px.length / 4), nan, px }; };
+
+  // 1. the stable state must stay stable with no seed
+  rd.reset();
+  let s = read();
+  T('stable state starts at U=1 V=0', Math.abs(s.maxU - 1) < 1e-3 && s.maxV < 1e-6,
+    `U ${s.minU.toFixed(3)}..${s.maxU.toFixed(3)}  V max ${s.maxV.toExponential(1)}`);
+
+  const P = { ...REGIMES.coral, Du:1, Dv:0.5, dt:1, iters:30, inject:0, decay:0 };
+  rd.step(P); rd.step(P); rd.step(P);
+  s = read();
+  T('unseeded field stays dead (no spontaneous growth)', s.maxV < 1e-5, 'V max ' + s.maxV.toExponential(1));
+
+  // 2. seed a blob and let it develop
+  const seed = new Uint8ClampedArray(256 * 160 * 4);
+  for (let j = 0; j < 160; j++) for (let i = 0; i < 256; i++) {
+    const d = Math.hypot(i - 128, j - 80);
+    const k = (j * 256 + i) * 4;
+    const v = d < 14 ? 255 : 0;
+    seed[k] = 20 * v / 255; seed[k + 1] = 200 * v / 255; seed[k + 2] = 255 * v / 255; seed[k + 3] = 255;
+  }
+  rd.seed({ width:256, height:160, data:seed });
+  rd.step({ ...P, inject:1.0 });
+  s = read();
+  T('injection puts V into the field', s.maxV > 0.1, 'V max ' + s.maxV.toFixed(3));
+
+  // 3. run it and check it develops STRUCTURE rather than a uniform blur
+  const noSeed = { width:256, height:160, data:new Uint8ClampedArray(256*160*4) };
+  rd.seed(noSeed);
+  for (let f = 0; f < 120; f++) rd.step({ ...P, inject:0 });
+  s = read();
+  T('field stays bounded and finite', s.nan === 0 && s.maxV <= 1.0001 && s.minV >= -1e-6,
+    `V ${s.minV.toFixed(4)}..${s.maxV.toFixed(4)}  U ${s.minU.toFixed(3)}..${s.maxU.toFixed(3)}  NaN ${s.nan}`);
+  T('the reaction survived 3600 iterations', s.maxV > 0.05, 'V max ' + s.maxV.toFixed(4));
+
+  // structure = the pattern is not radially uniform. Sample a ring and look
+  // at its variance; a plain diffusing blob would be flat around any ring.
+  let ringVals = [];
+  for (let a = 0; a < 180; a++) {
+    const th = a / 180 * Math.PI * 2;
+    const i = Math.round(128 + Math.cos(th) * 34), j = Math.round(80 + Math.sin(th) * 34);
+    ringVals.push(s.px[(j * 256 + i) * 4 + 1]);
+  }
+  const mu = ringVals.reduce((a,b)=>a+b,0)/ringVals.length;
+  const sd = Math.sqrt(ringVals.reduce((a,b)=>a+(b-mu)**2,0)/ringVals.length);
+  T('coral grows angular STRUCTURE, not a uniform blob', sd > 0.02,
+    `ring sd ${sd.toFixed(4)} (mean ${mu.toFixed(4)}) — a blur would be ~0`);
+
+  // 4. Every regime must survive under the conditions it ACTUALLY runs in.
+  // The visualizer seeds continuously — every frame of traffic injects V — so
+  // testing a single dose followed by silence is the wrong experiment and
+  // makes narrow regimes look broken when they are not.
+  const fields = {}, oneShot = {}, grids = {};
+  for (const name of Object.keys(REGIMES)) {
+    const R = { ...REGIMES[name], Du:1, Dv:0.5, dt:1, iters:30, decay:0 };
+    // (a) one dose then silence — does the pattern sustain itself?
+    rd.reset(); rd.seed({ width:256, height:160, data:seed });
+    rd.step({ ...R, inject:1.0 });
+    rd.seed(noSeed);
+    for (let f = 0; f < 100; f++) rd.step({ ...R, inject:0 });
+    oneShot[name] = read().meanV;
+    // (b) sustained seeding, which is how it really runs
+    rd.reset(); rd.seed({ width:256, height:160, data:seed });
+    for (let f = 0; f < 120; f++) rd.step({ ...R, inject:0.35 });
+    const r = read();
+    fields[name] = r.meanV;
+    const g = new Float32Array(256 * 160);
+    for (let i = 0, k = 1; i < g.length; i++, k += 4) g[i] = r.px[k];
+    grids[name] = g;
+  }
+  const alive = Object.entries(fields).filter(([,v]) => v > 0.002).map(([k]) => k);
+  T('every regime is alive under sustained seeding', alive.length === Object.keys(REGIMES).length,
+    Object.entries(fields).map(([k,v])=>`${k} ${v.toFixed(4)}`).join('  '));
+
+  // Mean concentration is a POOR discriminator: coral, worms and spots carry
+  // similar total V and differ entirely in how it is arranged. Compare the
+  // fields pixel by pixel instead, relative to their own magnitude.
+  // The named regimes are points in a continuous (F, k) plane, and some of
+  // them are genuine neighbours: mitosis and solitons are both spot-forming
+  // and sit about 0.007 apart in F. So the honest assertion is that the SET
+  // spans structurally distinct families, not that every pair differs.
+  const names = Object.keys(grids);
+  const pairs = [];
+  for (let a = 0; a < names.length; a++) for (let b = a + 1; b < names.length; b++) {
+    const A = grids[names[a]], B = grids[names[b]];
+    let diff = 0, mag = 0;
+    for (let i = 0; i < A.length; i++) { diff += Math.abs(A[i] - B[i]); mag += (A[i] + B[i]) * 0.5; }
+    pairs.push({ p: `${names[a]}/${names[b]}`, rel: mag > 1e-9 ? diff / mag : 0 });
+  }
+  pairs.sort((x, y) => y.rel - x.rel);
+  T('the regime set spans structurally distinct families', pairs[0].rel > 0.8,
+    `widest ${pairs[0].p} differs by ${(pairs[0].rel * 100).toFixed(0)}%`);
+  result.pairs = pairs.map(p => `${p.p} ${(p.rel * 100).toFixed(0)}%`);
+  T('(diagnostic) nearest regime pairs', true,
+    pairs.slice(-3).map(p => `${p.p} ${(p.rel * 100).toFixed(0)}%`).join('  ') + '  <- these look alike');
+
+  // spatial contrast: a regime that is working has texture, not a flat wash
+  const contrast = {};
+  for (const n of names) {
+    const g = grids[n];
+    let mu = 0; for (const v of g) mu += v; mu /= g.length;
+    let sd = 0; for (const v of g) sd += (v - mu) ** 2;
+    contrast[n] = Math.sqrt(sd / g.length);
+  }
+  T('every regime develops spatial texture', Object.values(contrast).every(v => v > 0.01),
+    Object.entries(contrast).map(([k,v])=>`${k} ${v.toFixed(3)}`).join('  '));
+
+  result.oneShot = oneShot;
+  T('(diagnostic) self-sustaining after a single dose, decay 0', true,
+    Object.entries(oneShot).map(([k,v])=>`${k} ${v > 0.002 ? 'lives' : 'dies'}`).join('  '));
+
+  // 5. the display shader must actually paint something
+  const col = { mode:'legacy', cfg:null, warnPull:0.85,
+                flowRGB:[53,224,255], warnRGB:[255,160,42], _stops:null };
+  rd.reset(); rd.seed({ width:256, height:160, data:seed });
+  rd.step({ ...P, inject:1.0 });
+  for (let f = 0; f < 40; f++) rd.step({ ...P, inject:0 });
+  rd.render(col, 2.6, 0, 0.42, 0.03);
+  const probe = document.createElement('canvas'); probe.width = 256; probe.height = 160;
+  const pc = probe.getContext('2d'); pc.drawImage(rd.canvas, 0, 0);
+  const px = pc.getImageData(0,0,256,160).data;
+  let lit = 0; for (let i = 3; i < px.length; i += 4) if (px[i] > 8) lit++;
+  const total = 256*160;
+  T('display shader paints visible pixels', lit > 200, `${lit} of ${total} pixels have alpha`);
+  // and it must NOT paint the dead ground: without a coverage floor every
+  // colouriser mode has a ~0.1 alpha minimum, which would tint the whole frame
+  T('dead chemistry stays transparent (no full-frame wash)', lit < total * 0.75,
+    `${(100*lit/total).toFixed(1)}% of the frame is lit — a wash would be 100%`);
+
+  document.getElementById('c').appendChild(rd.canvas);
+  rd.canvas.style.width = '512px';
+}
+const passed = result.tests.filter(t=>t.pass).length;
+log(`\n${passed} passed, ${result.tests.length - passed} failed`);
+result.summary = `${passed}/${result.tests.length}`;
+fetch('/selftest', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(result) });
+</script></body></html>

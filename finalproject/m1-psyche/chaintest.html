@@ -1,0 +1,129 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Psyche image chain self test</title>
+<style>body{background:#0b0e12;color:#cfe;font:13px ui-monospace,Menlo,monospace;padding:18px}
+.ok{color:#6fbf86}.bad{color:#cf6b5e}canvas{border:1px solid #2c343d;margin:8px 8px 0 0;width:430px}</style>
+</head><body><pre id="o">running…</pre><div id="c"></div>
+<script>
+// A module that throws posts nothing at all, which looks identical to the
+// daemon being down. Report the crash instead.
+window.__crashed = false;
+function reportCrash(msg, src, line, col) {
+  if (window.__crashed) return; window.__crashed = true;
+  const body = JSON.stringify({ suite:'CRASH', summary:'0/0',
+    tests:[{ name:'page threw before it could run', pass:false,
+             detail:`${msg} (${(src||'').split('/').pop()}:${line}:${col})` }] });
+  try { fetch('/selftest',{method:'POST',headers:{'Content-Type':'application/json'},body}); } catch(e){}
+  const o = document.getElementById('o'); if (o) o.textContent = 'CRASH: ' + msg;
+}
+window.onerror = (m,s,l,c) => reportCrash(m,s,l,c);
+window.addEventListener('unhandledrejection', e =>
+  reportCrash('unhandled rejection: ' + (e.reason && e.reason.message || e.reason), '', 0, 0));
+</script>
+<script type="module">
+import { mockDesktop, layout } from './scene.js';
+import { applyStack, identity } from './modulate.js';
+import { drawChrome, drawGlyphs, makeMeasurer, PAL } from './render.js';
+import { ImageChain, CHAIN_W, CHAIN_H } from './chain.js';
+
+const r = { suite:'psyche-chain', tests:[] };
+const log = s => { const o=document.getElementById('o');
+  o.innerHTML = r.tests.map(t=>`<span class="${t.pass?'ok':'bad'}">${t.pass?' ok  ':'FAIL '}${t.name}</span>\n       ${t.detail}`).join('\n') + (s||''); };
+const T=(n,p,d)=>{r.tests.push({name:n,pass:p,detail:d});log();};
+
+const BASE_W = 1440, BASE_H = 900;
+const OUT_W = 1280, OUT_H = 800;
+const scene = mockDesktop(BASE_W, BASE_H);
+const mk = (w,h) => { const c=document.createElement('canvas'); c.width=w; c.height=h; return c; };
+
+const probe = mk(8,8).getContext('2d');
+const measure = makeMeasurer(probe);
+const xf = identity();
+const stack = [];
+const drawDesktop = (c,w,h,wall) => {
+  const s = w / BASE_W;
+  c.save(); c.setTransform(s,0,0,s,0,0);
+  c.fillStyle = wall; c.fillRect(0,0,BASE_W,BASE_H);
+  drawChrome(c, scene.chrome, BASE_W, BASE_H);
+  const g = layout(scene.blocks, measure, stack);
+  drawGlyphs(c, g, q => applyStack(q, stack, 0, BASE_W, BASE_H, xf));
+  c.restore();
+};
+
+const chain = new ImageChain();
+T('chain constructed', !!chain.fb && !!chain.scan && !!chain.shapes,
+  `raster ${CHAIN_W}x${CHAIN_H}, rd ${chain.rd.ok ? 'ok' : 'OFF: '+chain.rd.reason}`);
+
+const ink = ctx => { const d=ctx.getImageData(0,0,OUT_W,OUT_H).data; let n=0;
+  for(let i=0;i<d.length;i+=4) if(d[i]>26||d[i+1]>32||d[i+2]>40) n++; return n; };
+const diff = (a,b) => { const x=a.getImageData(0,0,OUT_W,OUT_H).data, y=b.getImageData(0,0,OUT_W,OUT_H).data;
+  let n=0; for(let i=0;i<x.length;i+=4)
+    if(Math.abs(x[i]-y[i])+Math.abs(x[i+1]-y[i+1])+Math.abs(x[i+2]-y[i+2])>24) n++; return n; };
+
+// --- dry reference: the crisp desktop, drawn directly ---------------------
+const dryC = mk(OUT_W,OUT_H), dry = dryC.getContext('2d',{willReadFrequently:true});
+const k = Math.min(OUT_W/BASE_W, OUT_H/BASE_H);
+dry.fillStyle = PAL.wall; dry.fillRect(0,0,OUT_W,OUT_H);
+dry.setTransform(k,0,0,k,(OUT_W-BASE_W*k)/2,(OUT_H-BASE_H*k)/2);
+drawDesktop(dry, BASE_W, BASE_H, PAL.wall);
+dry.setTransform(1,0,0,1,0,0);
+T('the dry desktop renders', ink(dry) > 20000, `${ink(dry)} lit pixels`);
+
+// --- wet: the whole chain -------------------------------------------------
+const G = { 'scan.amp':48, 'scan.persp':0.45, 'fb.gain':0.9, 'fb.zoom':1.002, 'fb.rot':0.0006 };
+const wetC = mk(OUT_W,OUT_H), wet = wetC.getContext('2d',{willReadFrequently:true});
+wet.fillStyle = PAL.wall; wet.fillRect(0,0,OUT_W,OUT_H);
+for (let f=0; f<30; f++) chain.render((c,w,h)=>drawDesktop(c,w,h,'#000'), G, wet, OUT_W, OUT_H, 1, f/60);
+const inkWet = ink(wet);
+T('the image chain paints', inkWet > 5000, `${inkWet} lit pixels after 30 frames`);
+T('and it does NOT look like the dry desktop', diff(dry, wet) > 60000,
+  `${diff(dry,wet)} of ${OUT_W*OUT_H} pixels differ`);
+
+// --- the dry path at mix 0 must be untouched ------------------------------
+const zeroC = mk(OUT_W,OUT_H), zero = zeroC.getContext('2d',{willReadFrequently:true});
+zero.fillStyle = PAL.wall; zero.fillRect(0,0,OUT_W,OUT_H);
+zero.setTransform(k,0,0,k,(OUT_W-BASE_W*k)/2,(OUT_H-BASE_H*k)/2);
+zero.globalAlpha = 1;
+drawDesktop(zero, BASE_W, BASE_H, PAL.wall);
+zero.setTransform(1,0,0,1,0,0);
+T('at chain.mix 0 the desktop is pixel-identical to never running the chain',
+  diff(dry, zero) === 0, `${diff(dry,zero)} pixels differ — the dry path bypasses the raster entirely`);
+
+// --- chemistry ------------------------------------------------------------
+if (chain.rd.ok) {
+  const chemC = mk(OUT_W,OUT_H), chem = chemC.getContext('2d',{willReadFrequently:true});
+  chem.fillStyle = PAL.wall; chem.fillRect(0,0,OUT_W,OUT_H);
+  const G2 = { ...G, 'rd.mix':1, 'rd.iters':14, 'rd.inject':0.9, 'rd.feed':0.0545, 'rd.kill':0.062 };
+  for (let f=0; f<40; f++) chain.render((c,w,h)=>drawDesktop(c,w,h,'#000'), G2, chem, OUT_W, OUT_H, 1, f/60);
+  T('chemistry on a desktop produces a different image than deflection alone',
+    diff(wet, chem) > 40000, `${diff(wet,chem)} pixels differ`);
+  chemC.id='chem';
+}
+
+// --- cost -----------------------------------------------------------------
+const costC = mk(OUT_W,OUT_H), cost = costC.getContext('2d');
+let t0 = performance.now(); const N = 40;
+for (let f=0; f<N; f++) {
+  cost.setTransform(1,0,0,1,0,0);
+  cost.fillStyle = PAL.wall; cost.fillRect(0,0,OUT_W,OUT_H);
+  chain.render((c,w,h)=>drawDesktop(c,w,h,'#000'), G, cost, OUT_W, OUT_H, 1, f/60);
+}
+const msWet = (performance.now()-t0)/N;
+T('full chain, fully wet, per frame', msWet < 33,
+  `${msWet.toFixed(1)} ms (${(1000/msWet).toFixed(0)} fps) at ${CHAIN_W}x${CHAIN_H} raster -> ${OUT_W}x${OUT_H}`);
+
+t0 = performance.now();
+for (let f=0; f<N; f++) {
+  cost.setTransform(1,0,0,1,0,0);
+  cost.fillStyle = PAL.wall; cost.fillRect(0,0,OUT_W,OUT_H);
+  const G3 = { ...G, 'rd.mix':1, 'rd.iters':14 };
+  chain.render((c,w,h)=>drawDesktop(c,w,h,'#000'), G3, cost, OUT_W, OUT_H, 1, f/60);
+}
+const msChem = (performance.now()-t0)/N;
+T('with chemistry on top', msChem < 40, `${msChem.toFixed(1)} ms (${(1000/msChem).toFixed(0)} fps)`);
+
+for (const c of [dryC, wetC, costC]) document.getElementById('c').appendChild(c);
+const p = r.tests.filter(t=>t.pass).length;
+r.summary = `${p}/${r.tests.length}`;
+log(`\n\n${p} passed, ${r.tests.length-p} failed`);
+fetch('/selftest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)});
+</script></body></html>

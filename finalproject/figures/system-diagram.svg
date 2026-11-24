@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="750" viewBox="0 0 1180 750" font-family="Helvetica, Arial, sans-serif">
+  <rect width="1180" height="750" fill="#ffffff"/>
+
+  <style>
+    .hd   { font-size:13px; font-weight:700; letter-spacing:1.6px; fill:#6b7280; }
+    .ttl  { font-size:15px; font-weight:700; fill:#111827; }
+    .it   { font-size:12.5px; fill:#1f2937; }
+    .dim  { font-size:11px; fill:#6b7280; }
+    .op   { font-size:12px; font-weight:600; fill:#0f766e; }
+    .lbl  { font-size:11.5px; fill:#374151; }
+    .fb   { font-size:11.5px; font-weight:600; fill:#b45309; }
+    .box  { fill:#f9fafb; stroke:#d1d5db; stroke-width:1.5; }
+    .ar   { stroke:#374151; stroke-width:2; fill:none; marker-end:url(#a); }
+    .arf  { stroke:#d97706; stroke-width:2; fill:none; stroke-dasharray:6 4; marker-end:url(#af); }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#374151"/></marker>
+    <marker id="af" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#d97706"/></marker>
+  </defs>
+
+  <!-- ============ A : SENSE ============ -->
+  <rect class="box" x="30" y="70" width="290" height="360" rx="7"/>
+  <text class="hd"  x="46" y="96">A · SENSE</text>
+  <text class="ttl" x="46" y="120">telemetryd.js — built, running</text>
+  <text class="dim" x="46" y="138">43 channels · 30 Hz · unprivileged · ~2% CPU</text>
+
+  <text class="it"  x="46" y="170">vm_stat</text>
+  <text class="dim" x="150" y="170">faults, pageins, compressor</text>
+  <text class="it"  x="46" y="192">iostat</text>
+  <text class="dim" x="150" y="192">cpu %, disk tps, MB/s</text>
+  <text class="it"  x="46" y="214">nettop</text>
+  <text class="dim" x="150" y="214">bytes, re-tx, RTT, dupes</text>
+  <text class="it"  x="46" y="236">ioreg</text>
+  <text class="dim" x="150" y="236">volts, amps, temp</text>
+  <text class="it"  x="46" y="258">FSEvents</text>
+  <text class="dim" x="150" y="258">file-change events</text>
+  <text class="it"  x="46" y="280">pressure-probe</text>
+  <text class="dim" x="150" y="280">cursor, scroll, force (Swift)</text>
+
+  <line x1="46" y1="300" x2="304" y2="300" stroke="#e5e7eb" stroke-width="1"/>
+  <text class="it"  x="46" y="322">filesystem structure</text>
+  <text class="dim" x="46" y="340">depth, fan-out, mdls metadata, UTI</text>
+  <text class="it"  x="46" y="366">rendered frame (t−1)</text>
+  <text class="dim" x="46" y="384">ScreenCaptureKit / GPU texture</text>
+  <text class="fb"  x="46" y="408">↑ output re-enters as input</text>
+
+  <!-- ============ B : TRANSFORM ============ -->
+  <rect class="box" x="400" y="70" width="360" height="430" rx="7"/>
+  <text class="hd"  x="416" y="96">B · TRANSFORM</text>
+  <text class="ttl" x="416" y="120">signal processing</text>
+  <text class="dim" x="416" y="138">non-stationary, heavy-tailed, event-driven</text>
+
+  <text class="dim" x="416" y="168">conditioning</text>
+  <text class="it"  x="416" y="188">differentiate counters → log1p → detrend</text>
+  <text class="it"  x="416" y="206">resample to uniform grid (Hann, 50% hop)</text>
+
+  <text class="dim" x="416" y="238">spectral</text>
+  <text class="op"  x="416" y="258">STFT / iSTFT</text>
+  <text class="dim" x="530" y="258">0.1–0.3 Hz band → breathing envelope</text>
+  <text class="op"  x="416" y="278">FFT</text>
+  <text class="dim" x="530" y="278">spectral centroid → blur radius</text>
+
+  <text class="dim" x="416" y="310">temporal structure</text>
+  <text class="op"  x="416" y="330">autocorrelation</text>
+  <text class="dim" x="530" y="330">build/GC periodicity; gesture tempo</text>
+  <text class="op"  x="416" y="350">cross-correlation</text>
+  <text class="dim" x="530" y="350">lag: which subsystem leads which</text>
+
+  <text class="dim" x="416" y="382">filtering</text>
+  <text class="op"  x="416" y="402">IIR / one-euro</text>
+  <text class="dim" x="530" y="402">envelope follower, cursor smoothing</text>
+  <text class="op"  x="416" y="422">convolution</text>
+  <text class="dim" x="530" y="422">sparse events ⊛ decay kernel</text>
+
+  <text class="dim" x="416" y="454">image domain</text>
+  <text class="op"  x="416" y="474">2-D convolution</text>
+  <text class="dim" x="530" y="474">blur = diffusion, unsharp = reaction</text>
+
+  <!-- ============ C : FORM ============ -->
+  <rect class="box" x="840" y="70" width="310" height="430" rx="7"/>
+  <text class="hd"  x="856" y="96">C · FORM</text>
+  <text class="ttl" x="856" y="120">renderer (GLSL)</text>
+  <text class="dim" x="856" y="138">60 fps budget = 16.67 ms</text>
+
+  <text class="it"  x="856" y="170">1 · log-polar transform</text>
+  <text class="dim" x="856" y="188">(r, θ) → (log r, θ)</text>
+  <text class="dim" x="856" y="204">gratings here → form constants</text>
+
+  <text class="it"  x="856" y="236">2 · file tree layout</text>
+  <text class="dim" x="856" y="254">space colonization + phyllotaxis</text>
+
+  <text class="it"  x="856" y="286">3 · feedback accumulator</text>
+  <text class="dim" x="856" y="304">scale 0.990–1.015 / frame</text>
+  <text class="dim" x="856" y="320">rotate 0.1–1.5° / frame</text>
+  <text class="dim" x="856" y="336">gain 0.90–0.99, tanh clamp</text>
+
+  <text class="it"  x="856" y="368">4 · tap-and-slide bloom</text>
+  <text class="dim" x="856" y="386">springs, hysteresis, &lt;100 ms</text>
+
+  <text class="it"  x="856" y="418">5 · safety limiter</text>
+  <text class="dim" x="856" y="436">≤3 flashes/s, reduced-motion</text>
+  <text class="dim" x="856" y="452">user intensity control</text>
+
+  <!-- ============ arrows ============ -->
+  <path class="ar" d="M322 250 L394 250"/>
+  <text class="lbl" x="326" y="240">signals</text>
+  <path class="ar" d="M762 285 L834 285"/>
+  <text class="lbl" x="766" y="275">control</text>
+
+  <!-- feedback lane 1: rendered frame re-enters as a signal -->
+  <path class="arf" d="M995 502 L995 616 Q995 632 979 632 L190 632 Q174 632 174 616 L174 434"/>
+  <text class="fb" x="214" y="624">rendered frame re-enters as a signal — 2-D FFT (saturation detection) · phase correlation (FFT→iFFT) for optical flow</text>
+
+  <!-- feedback lane 2: the renderer's own cost is part of the telemetry -->
+  <path class="arf" d="M1060 502 L1060 676 Q1060 692 1044 692 L120 692 Q104 692 104 676 L104 434"/>
+  <text class="fb" x="214" y="684">the renderer's own GPU / ANE load appears in the telemetry that drives the renderer</text>
+
+  <!-- human loop -->
+  <rect class="box" x="400" y="528" width="360" height="62" rx="7" fill="#fffbeb" stroke="#fcd34d"/>
+  <text class="ttl" x="416" y="552">human in the loop</text>
+  <text class="dim" x="416" y="572">dwell → gain rises · motion → resets · slide → tunnel depth</text>
+  <path class="ar" d="M580 526 L580 504"/>
+</svg>

@@ -1,0 +1,347 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1620" height="1367" viewBox="0 0 1620 1367" font-family="-apple-system,Helvetica,Arial,sans-serif">
+<rect width="1620" height="1367" fill="#fff"/>
+<text x="40" y="42" font-size="20" font-weight="700" fill="#101418">Signal patch map — what every measured channel is wired to</text>
+<text x="40" y="66" font-size="12.5" fill="#63707e">All 43 channels the daemon streams. Cyan = patched and driving the image. Amber = a contention channel, drives the warning colour. Purple = measured and streaming, driving nothing yet.</text>
+<text x="40" y="86" font-size="12.5" fill="#63707e">Conditioning on every link is the same: value → log1p(v)/log1p(ref) with a decaying peak tracker on ref → exponential moving average (α 0.10). No FFT, STFT or autocorrelation anywhere in the chain yet.</text>
+<path d="M370,144.5 C520,144.5 860,908 1010,908" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,165.5 C520,165.5 860,908 1010,908" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,186.5 C520,186.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,207.5 C520,207.5 860,665 1010,665" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,207.5 C520,207.5 860,686 1010,686" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,207.5 C520,207.5 860,781 1010,781" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,228.5 C520,228.5 860,929 1010,929" fill="none" stroke="rgba(150,165,180,0.40)" stroke-width="1.25"/>
+<path d="M370,249.5 C520,249.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,302.5 C520,302.5 860,444 1010,444" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,323.5 C520,323.5 860,423 1010,423" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,344.5 C520,344.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,397.5 C520,397.5 860,465 1010,465" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,418.5 C520,418.5 860,486 1010,486" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,439.5 C520,439.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,460.5 C520,460.5 860,507 1010,507" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,481.5 C520,481.5 860,528 1010,528" fill="none" stroke="rgba(200,110,25,0.50)" stroke-width="1.25"/>
+<path d="M370,481.5 C520,481.5 860,707 1010,707" fill="none" stroke="rgba(200,110,25,0.50)" stroke-width="1.25"/>
+<path d="M370,481.5 C520,481.5 860,728 1010,728" fill="none" stroke="rgba(200,110,25,0.50)" stroke-width="1.25"/>
+<path d="M370,481.5 C520,481.5 860,855 1010,855" fill="none" stroke="rgba(200,110,25,0.50)" stroke-width="1.25"/>
+<path d="M370,502.5 C520,502.5 860,549 1010,549" fill="none" stroke="rgba(200,110,25,0.50)" stroke-width="1.25"/>
+<path d="M370,523.5 C520,523.5 860,570 1010,570" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,544.5 C520,544.5 860,929 1010,929" fill="none" stroke="rgba(150,165,180,0.40)" stroke-width="1.25"/>
+<path d="M370,565.5 C520,565.5 860,929 1010,929" fill="none" stroke="rgba(150,165,180,0.40)" stroke-width="1.25"/>
+<path d="M370,586.5 C520,586.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,607.5 C520,607.5 860,929 1010,929" fill="none" stroke="rgba(150,165,180,0.40)" stroke-width="1.25"/>
+<path d="M370,628.5 C520,628.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,681.5 C520,681.5 860,381 1010,381" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,702.5 C520,702.5 860,402 1010,402" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,723.5 C520,723.5 860,381 1010,381" fill="none" stroke="rgba(200,110,25,0.50)" stroke-width="1.25"/>
+<path d="M370,723.5 C520,723.5 860,728 1010,728" fill="none" stroke="rgba(200,110,25,0.50)" stroke-width="1.25"/>
+<path d="M370,744.5 C520,744.5 860,381 1010,381" fill="none" stroke="rgba(200,110,25,0.50)" stroke-width="1.25"/>
+<path d="M370,765.5 C520,765.5 860,381 1010,381" fill="none" stroke="rgba(200,110,25,0.50)" stroke-width="1.25"/>
+<path d="M370,786.5 C520,786.5 860,929 1010,929" fill="none" stroke="rgba(150,165,180,0.40)" stroke-width="1.25"/>
+<path d="M370,807.5 C520,807.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,860.5 C520,860.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,881.5 C520,881.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,902.5 C520,902.5 860,929 1010,929" fill="none" stroke="rgba(150,165,180,0.40)" stroke-width="1.25"/>
+<path d="M370,923.5 C520,923.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,944.5 C520,944.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,997.5 C520,997.5 860,612 1010,612" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,997.5 C520,997.5 860,834 1010,834" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<path d="M370,1050.5 C520,1050.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,1071.5 C520,1071.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,1092.5 C520,1092.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,1113.5 C520,1113.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,1134.5 C520,1134.5 860,929 1010,929" fill="none" stroke="rgba(150,165,180,0.40)" stroke-width="1.25"/>
+<path d="M370,1155.5 C520,1155.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,1176.5 C520,1176.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,1197.5 C520,1197.5 860,982 1010,982" fill="none" stroke="rgba(122,75,184,0.42)" stroke-width="1.1" stroke-dasharray="3 3"/>
+<path d="M370,1218.5 C520,1218.5 860,591 1010,591" fill="none" stroke="rgba(21,150,190,0.40)" stroke-width="1.25"/>
+<text x="40" y="125" font-size="11" font-weight="700" letter-spacing="1.3" fill="#101418">CPU</text>
+<line x1="40" y1="130" x2="370" y2="130" stroke="#ccd4dd"/>
+<rect x="40" y="136" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="136" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="149" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">cpu.user_pct</text>
+<circle cx="362" cy="144.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="157" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="157" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="170" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">cpu.sys_pct</text>
+<circle cx="362" cy="165.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="178" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="178" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="191" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">cpu.idle_pct</text>
+<circle cx="362" cy="186.5" r="2.6" fill="#7a4bb8"/>
+<rect x="40" y="199" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="199" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="212" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">cpu.busy_pct</text>
+<circle cx="362" cy="207.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="220" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="220" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="233" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">load.1m</text>
+<circle cx="362" cy="228.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="241" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="241" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="254" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">proc.top_cpu_pct</text>
+<circle cx="362" cy="249.5" r="2.6" fill="#7a4bb8"/>
+<text x="40" y="283" font-size="11" font-weight="700" letter-spacing="1.3" fill="#101418">STORAGE</text>
+<line x1="40" y1="288" x2="370" y2="288" stroke="#ccd4dd"/>
+<rect x="40" y="294" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="294" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="307" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">disk.tps</text>
+<circle cx="362" cy="302.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="315" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="315" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="328" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">disk.mb_per_s</text>
+<circle cx="362" cy="323.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="336" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="336" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="349" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">disk.kb_per_tx</text>
+<circle cx="362" cy="344.5" r="2.6" fill="#7a4bb8"/>
+<text x="40" y="378" font-size="11" font-weight="700" letter-spacing="1.3" fill="#101418">MEMORY</text>
+<line x1="40" y1="383" x2="370" y2="383" stroke="#ccd4dd"/>
+<rect x="40" y="389" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="389" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="402" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">vm.faults_per_s</text>
+<circle cx="362" cy="397.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="410" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="410" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="423" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">vm.cow_per_s</text>
+<circle cx="362" cy="418.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="431" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="431" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="444" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">vm.zerofill_per_s</text>
+<circle cx="362" cy="439.5" r="2.6" fill="#7a4bb8"/>
+<rect x="40" y="452" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="452" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="465" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">vm.pageins_per_s</text>
+<circle cx="362" cy="460.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="473" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="473" width="3" height="17" fill="#c2610d" rx="1.5"/>
+<text x="52" y="486" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">vm.pageouts_per_s</text>
+<circle cx="362" cy="481.5" r="2.6" fill="#c2610d"/>
+<rect x="40" y="494" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="494" width="3" height="17" fill="#c2610d" rx="1.5"/>
+<text x="52" y="507" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">vm.compress_per_s</text>
+<circle cx="362" cy="502.5" r="2.6" fill="#c2610d"/>
+<rect x="40" y="515" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="515" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="528" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">vm.decompress_per_s</text>
+<circle cx="362" cy="523.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="536" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="536" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="549" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">vm.free_mb</text>
+<circle cx="362" cy="544.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="557" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="557" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="570" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">vm.active_mb</text>
+<circle cx="362" cy="565.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="578" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="578" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="591" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">vm.wired_mb</text>
+<circle cx="362" cy="586.5" r="2.6" fill="#7a4bb8"/>
+<rect x="40" y="599" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="599" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="612" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">vm.compressor_mb</text>
+<circle cx="362" cy="607.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="620" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="620" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="633" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">vm.compressed_logical_mb</text>
+<circle cx="362" cy="628.5" r="2.6" fill="#7a4bb8"/>
+<text x="40" y="662" font-size="11" font-weight="700" letter-spacing="1.3" fill="#101418">NETWORK</text>
+<line x1="40" y1="667" x2="370" y2="667" stroke="#ccd4dd"/>
+<rect x="40" y="673" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="673" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="686" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">net.in_bytes_per_s</text>
+<circle cx="362" cy="681.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="694" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="694" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="707" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">net.out_bytes_per_s</text>
+<circle cx="362" cy="702.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="715" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="715" width="3" height="17" fill="#c2610d" rx="1.5"/>
+<text x="52" y="728" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">net.retx_per_s</text>
+<circle cx="362" cy="723.5" r="2.6" fill="#c2610d"/>
+<rect x="40" y="736" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="736" width="3" height="17" fill="#c2610d" rx="1.5"/>
+<text x="52" y="749" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">net.dupe_per_s</text>
+<circle cx="362" cy="744.5" r="2.6" fill="#c2610d"/>
+<rect x="40" y="757" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="757" width="3" height="17" fill="#c2610d" rx="1.5"/>
+<text x="52" y="770" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">net.ooo_per_s</text>
+<circle cx="362" cy="765.5" r="2.6" fill="#c2610d"/>
+<rect x="40" y="778" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="778" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="791" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">net.rtt_avg_ms</text>
+<circle cx="362" cy="786.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="799" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="799" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="812" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">net.active_procs</text>
+<circle cx="362" cy="807.5" r="2.6" fill="#7a4bb8"/>
+<text x="40" y="841" font-size="11" font-weight="700" letter-spacing="1.3" fill="#101418">POWER</text>
+<line x1="40" y1="846" x2="370" y2="846" stroke="#ccd4dd"/>
+<rect x="40" y="852" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="852" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="865" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">pwr.volts</text>
+<circle cx="362" cy="860.5" r="2.6" fill="#7a4bb8"/>
+<rect x="40" y="873" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="873" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="886" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">pwr.amps</text>
+<circle cx="362" cy="881.5" r="2.6" fill="#7a4bb8"/>
+<rect x="40" y="894" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="894" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="907" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">pwr.watts</text>
+<circle cx="362" cy="902.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="915" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="915" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="928" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">pwr.batt_temp_c</text>
+<circle cx="362" cy="923.5" r="2.6" fill="#7a4bb8"/>
+<rect x="40" y="936" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="936" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="949" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">pwr.charging</text>
+<circle cx="362" cy="944.5" r="2.6" fill="#7a4bb8"/>
+<text x="40" y="978" font-size="11" font-weight="700" letter-spacing="1.3" fill="#101418">FILESYSTEM</text>
+<line x1="40" y1="983" x2="370" y2="983" stroke="#ccd4dd"/>
+<rect x="40" y="989" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="989" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="1002" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">fs.events</text>
+<circle cx="362" cy="997.5" r="2.6" fill="#0f7fa0"/>
+<text x="40" y="1031" font-size="11" font-weight="700" letter-spacing="1.3" fill="#101418">INPUT</text>
+<line x1="40" y1="1036" x2="370" y2="1036" stroke="#ccd4dd"/>
+<rect x="40" y="1042" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="1042" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="1055" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">in.pressure</text>
+<circle cx="362" cy="1050.5" r="2.6" fill="#7a4bb8"/>
+<rect x="40" y="1063" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="1063" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="1076" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">in.stage</text>
+<circle cx="362" cy="1071.5" r="2.6" fill="#7a4bb8"/>
+<rect x="40" y="1084" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="1084" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="1097" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">in.cursor_x</text>
+<circle cx="362" cy="1092.5" r="2.6" fill="#7a4bb8"/>
+<rect x="40" y="1105" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="1105" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="1118" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">in.cursor_y</text>
+<circle cx="362" cy="1113.5" r="2.6" fill="#7a4bb8"/>
+<rect x="40" y="1126" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="1126" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="1139" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">in.cursor_speed</text>
+<circle cx="362" cy="1134.5" r="2.6" fill="#0f7fa0"/>
+<rect x="40" y="1147" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="1147" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="1160" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">in.scroll_dy</text>
+<circle cx="362" cy="1155.5" r="2.6" fill="#7a4bb8"/>
+<rect x="40" y="1168" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="1168" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="1181" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">in.scroll_dx</text>
+<circle cx="362" cy="1176.5" r="2.6" fill="#7a4bb8"/>
+<rect x="40" y="1189" width="330" height="17" fill="#faf7fe" rx="2"/>
+<rect x="40" y="1189" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<text x="52" y="1202" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">in.clicks</text>
+<circle cx="362" cy="1197.5" r="2.6" fill="#7a4bb8"/>
+<rect x="40" y="1210" width="330" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="40" y="1210" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<text x="52" y="1223" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">in.events</text>
+<circle cx="362" cy="1218.5" r="2.6" fill="#0f7fa0"/>
+<text x="1010" y="361.5" font-size="11" font-weight="700" letter-spacing="1.3" fill="#101418">BUS EMISSION</text>
+<line x1="1010" y1="366.5" x2="1570" y2="366.5" stroke="#ccd4dd"/>
+<text x="1010" y="645.5" font-size="11" font-weight="700" letter-spacing="1.3" fill="#101418">SCAN PROCESSOR</text>
+<line x1="1010" y1="650.5" x2="1570" y2="650.5" stroke="#ccd4dd"/>
+<text x="1010" y="761.5" font-size="11" font-weight="700" letter-spacing="1.3" fill="#101418">FEEDBACK</text>
+<line x1="1010" y1="766.5" x2="1570" y2="766.5" stroke="#ccd4dd"/>
+<text x="1010" y="814.5" font-size="11" font-weight="700" letter-spacing="1.3" fill="#101418">TRAVELLERS</text>
+<line x1="1010" y1="819.5" x2="1570" y2="819.5" stroke="#ccd4dd"/>
+<text x="1010" y="888.5" font-size="11" font-weight="700" letter-spacing="1.3" fill="#101418">DIRECT</text>
+<line x1="1010" y1="893.5" x2="1570" y2="893.5" stroke="#ccd4dd"/>
+<text x="1010" y="962.5" font-size="11" font-weight="700" letter-spacing="1.3" fill="#101418">NOT PATCHED</text>
+<line x1="1010" y1="967.5" x2="1570" y2="967.5" stroke="#ccd4dd"/>
+<rect x="1010" y="372.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="372.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="381" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="385.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">net_in</text>
+<rect x="1010" y="393.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="393.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="402" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="406.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">net_out</text>
+<rect x="1010" y="414.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="414.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="423" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="427.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">disk_in</text>
+<rect x="1010" y="435.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="435.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="444" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="448.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">disk_out</text>
+<rect x="1010" y="456.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="456.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="465" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="469.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">fault</text>
+<rect x="1010" y="477.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="477.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="486" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="490.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">cow</text>
+<rect x="1010" y="498.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="498.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="507" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="511.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">pagein</text>
+<rect x="1010" y="519.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="519.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="528" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="532.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">pageout</text>
+<rect x="1010" y="540.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="540.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="549" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="553.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">compress</text>
+<rect x="1010" y="561.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="561.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="570" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="574.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">decomp</text>
+<rect x="1010" y="582.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="582.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="591" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="595.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">input</text>
+<rect x="1010" y="603.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="603.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="612" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="616.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">fsev</text>
+<rect x="1010" y="656.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="656.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="665" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="669.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">deflection amplitude</text>
+<rect x="1010" y="677.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="677.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="686" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="690.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">perspective depth</text>
+<rect x="1010" y="698.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="698.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="707" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="711.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">colour key threshold</text>
+<rect x="1010" y="719.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="719.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="728" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="732.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">raster tear</text>
+<rect x="1010" y="772.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="772.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="781" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="785.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">zoom + rotation</text>
+<rect x="1010" y="825.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="825.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="834" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="838.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">hero spawn</text>
+<rect x="1010" y="846.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="846.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="855" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="859.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">hero loss</text>
+<rect x="1010" y="899.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="899.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="908" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="912.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">CPU occupancy ring</text>
+<rect x="1010" y="920.5" width="560" height="17" fill="#f5f7f9" rx="2"/>
+<rect x="1567" y="920.5" width="3" height="17" fill="#0f7fa0" rx="1.5"/>
+<circle cx="1018" cy="929" r="2.6" fill="#0f7fa0"/>
+<text x="1030" y="933.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">numeric readout only</text>
+<rect x="1010" y="973.5" width="560" height="17" fill="#faf7fe" rx="2"/>
+<rect x="1567" y="973.5" width="3" height="17" fill="#7a4bb8" rx="1.5"/>
+<circle cx="1018" cy="982" r="2.6" fill="#7a4bb8"/>
+<text x="1030" y="986.5" font-size="10.5" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">FREE INPUTS — measured, streaming, driving nothing</text>
+<line x1="40" y1="1267" x2="1580" y2="1267" stroke="#ccd4dd"/>
+<text x="40" y="1289" font-size="12" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#101418">25 channels patched · 18 free · 43 measured in total</text>
+<text x="40" y="1309" font-size="11" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#63707e">KIND decides what is legal: level = filter/STFT/autocorrelate, never differentiate · rate = log1p first, already a derivative · event = convolve to an envelope before any spectral work · state = edges only</text>
+<text x="40" y="1327" font-size="11" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#63707e">The purple block is your free surface: 18 channels already streaming at full rate, costing nothing extra, currently driving nothing.</text>
+<text x="1580" y="1327" font-size="10" font-family="ui-monospace,'SF Mono',Menlo,monospace" fill="#ccd4dd" text-anchor="end">figures/make-signal-map.js</text>
+</svg>

@@ -1,0 +1,238 @@
+{
+ "name": "legible breathing",
+ "saved": "2026-11-24T09:35:37.252Z",
+ "graph": {
+  "v": 1,
+  "nodes": [
+   {
+    "id": "n15jtl",
+    "type": "channel",
+    "x": 60,
+    "y": 60,
+    "p": {
+     "ch": "cpu.busy_pct"
+    }
+   },
+   {
+    "id": "n16q0f",
+    "type": "scale",
+    "x": 300,
+    "y": 60,
+    "p": {
+     "mul": 0.01,
+     "add": 0
+    }
+   },
+   {
+    "id": "n17nx6",
+    "type": "lowpass",
+    "x": 520,
+    "y": 60,
+    "p": {
+     "cut": 0.8
+    }
+   },
+   {
+    "id": "n1813c",
+    "type": "remap",
+    "x": 760,
+    "y": 60,
+    "p": {
+     "il": 0,
+     "ih": 1,
+     "ol": 1.2,
+     "oh": 7,
+     "cl": "on"
+    }
+   },
+   {
+    "id": "n195wd",
+    "type": "txt.wave",
+    "x": 1000,
+    "y": 200,
+    "p": {
+     "amp": 2,
+     "f": 0.22,
+     "axis": "y",
+     "shape": "sine",
+     "from": "index",
+     "scale": 0.55,
+     "target": "all"
+    }
+   },
+   {
+    "id": "n20d0j",
+    "type": "txt.cascade",
+    "x": 1000,
+    "y": 60,
+    "p": {
+     "d": 0.012,
+     "from": "char",
+     "scale": 1,
+     "target": "all"
+    }
+   },
+   {
+    "id": "n213l6",
+    "type": "txt.wave",
+    "x": 1000,
+    "y": 350,
+    "p": {
+     "amp": 3.5,
+     "f": 0.16,
+     "axis": "y",
+     "shape": "sine",
+     "from": "word",
+     "scale": 1.4,
+     "target": "name"
+    }
+   },
+   {
+    "id": "n22uk2",
+    "type": "remap",
+    "x": 760,
+    "y": 470,
+    "p": {
+     "il": 0,
+     "ih": 1,
+     "ol": 0,
+     "oh": 1.1,
+     "cl": "on"
+    }
+   },
+   {
+    "id": "n23mq3",
+    "type": "txt.axes",
+    "x": 1000,
+    "y": 470,
+    "p": {
+     "w": 0.2,
+     "d": 0,
+     "s": 0,
+     "f": 0,
+     "from": "none",
+     "scale": 1,
+     "target": "all"
+    }
+   },
+   {
+    "id": "n246kr",
+    "type": "channel",
+    "x": 60,
+    "y": 640,
+    "p": {
+     "ch": "vm.pageouts_per_s"
+    }
+   },
+   {
+    "id": "n25lep",
+    "type": "norm",
+    "x": 300,
+    "y": 640,
+    "p": {
+     "ref": 900,
+     "decay": 0.9985,
+     "track": "off"
+    }
+   },
+   {
+    "id": "n26e3f",
+    "type": "envelope",
+    "x": 520,
+    "y": 640,
+    "p": {
+     "a": 90,
+     "r": 2600
+    }
+   },
+   {
+    "id": "n27hrn",
+    "type": "remap",
+    "x": 760,
+    "y": 640,
+    "p": {
+     "il": 0,
+     "ih": 1,
+     "ol": 0,
+     "oh": 2.2,
+     "cl": "on"
+    }
+   },
+   {
+    "id": "n28kq0",
+    "type": "txt.jitter",
+    "x": 1000,
+    "y": 640,
+    "p": {
+     "amt": 0,
+     "rot": 7,
+     "rate": 9,
+     "seed": 3,
+     "target": "all"
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "n15jtl",
+    "fo": 0,
+    "to": "n16q0f",
+    "ti": 0
+   },
+   {
+    "from": "n16q0f",
+    "fo": 0,
+    "to": "n17nx6",
+    "ti": 0
+   },
+   {
+    "from": "n17nx6",
+    "fo": 0,
+    "to": "n1813c",
+    "ti": 0
+   },
+   {
+    "from": "n1813c",
+    "fo": 0,
+    "to": "n195wd",
+    "ti": 0
+   },
+   {
+    "from": "n17nx6",
+    "fo": 0,
+    "to": "n22uk2",
+    "ti": 0
+   },
+   {
+    "from": "n22uk2",
+    "fo": 0,
+    "to": "n23mq3",
+    "ti": 0
+   },
+   {
+    "from": "n246kr",
+    "fo": 0,
+    "to": "n25lep",
+    "ti": 0
+   },
+   {
+    "from": "n25lep",
+    "fo": 0,
+    "to": "n26e3f",
+    "ti": 0
+   },
+   {
+    "from": "n26e3f",
+    "fo": 0,
+    "to": "n27hrn",
+    "ti": 0
+   },
+   {
+    "from": "n27hrn",
+    "fo": 0,
+    "to": "n28kq0",
+    "ti": 0
+   }
+  ]
+ }
+}

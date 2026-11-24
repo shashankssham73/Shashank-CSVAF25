@@ -1,0 +1,97 @@
+{
+ "name": "bright mosaic",
+ "saved": "2026-11-24T09:14:34.057Z",
+ "note": "Reads the screen as a 24x15 grid and turns only the tiles brighter than 0.45. Each tile is a real patch of the frame, moved.",
+ "graph": {
+  "v": 1,
+  "nodes": [
+   {
+    "id": "n5rtm",
+    "type": "read.grid",
+    "x": 60,
+    "y": 60,
+    "p": {
+     "cols": 24,
+     "rows": 15,
+     "ax": 0,
+     "ay": 0,
+     "aw": 1,
+     "ah": 1
+    }
+   },
+   {
+    "id": "n683o",
+    "type": "pick.range",
+    "x": 340,
+    "y": 60,
+    "p": {
+     "k": "bright",
+     "lo": 0.22,
+     "hi": 1
+    }
+   },
+   {
+    "id": "n7w07",
+    "type": "pick.combine",
+    "x": 620,
+    "y": 60,
+    "p": {
+     "mode": "and"
+    }
+   },
+   {
+    "id": "n81vx",
+    "type": "lay.rotate",
+    "x": 900,
+    "y": 60,
+    "p": {
+     "a": 24,
+     "f": 0.09,
+     "mode": "phase",
+     "from": "index",
+     "scale": 0.7,
+     "target": "all"
+    }
+   },
+   {
+    "id": "n9eaz",
+    "type": "lay.drift",
+    "x": 900,
+    "y": 260,
+    "p": {
+     "amt": 14,
+     "rot": 7,
+     "rate": 0,
+     "seed": 7,
+     "target": "all"
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "n5rtm",
+    "fo": 0,
+    "to": "n7w07",
+    "ti": 0
+   },
+   {
+    "from": "n683o",
+    "fo": 0,
+    "to": "n7w07",
+    "ti": 1
+   },
+   {
+    "from": "n7w07",
+    "fo": 0,
+    "to": "n81vx",
+    "ti": 1
+   },
+   {
+    "from": "n5rtm",
+    "fo": 0,
+    "to": "n9eaz",
+    "ti": 1
+   }
+  ]
+ }
+}

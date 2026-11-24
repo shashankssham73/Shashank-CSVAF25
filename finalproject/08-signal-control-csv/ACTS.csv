@@ -1,0 +1,10 @@
+"What ORDINARY WORLD, THE CALL and ORDEAL actually mean",,,,,,,
+"Campbell's hero's journey stages, each mapped to a measured condition. IMPORTANT: these thresholds are mine, not yours - I picked them to be plausible, not because they are right. They are tested top to bottom and the FIRST match wins, so order matters as much as the numbers. Overwrite the yellow columns with what you want and I will rewrite phaseOf() to match.",,,,,,,
+ACT,WHAT THE STAGE MEANS,"TRIGGER CONDITION (first match wins, top down)",LABEL SHOWN,WHAT IS REALLY HAPPENING,VISUAL REGIME,YOUR THRESHOLD (edit),YOUR VISUAL RULE (edit)
+ORDINARY WORLD,"Act I - the hero at home, nothing asked of them yet",(nothing else matched),-,idle,"slow drift, low deflection, almost flat scanlines",,
+THE CALL,Act I - the summons; something arrives that must be answered,fs.events > 2  OR  disk.tps > 120,files moving,files appear or change,"first ridges rise, heroes spawn at FS",,
+THE ROAD,"Act I/II - setting out; ordinary effort, nothing dramatic",cpu.busy_pct > 18,background work,any sustained CPU,"gentle terrain, steady flow",,
+CROSSING,Act II - crossing the threshold into another world,net.in + net.out > 400 kB/s,network,the task leaves this machine,"traffic on the NET bus, long horizontal runs",,
+TRIAL,"Act II - the road of trials; sustained difficulty, no help",cpu.busy_pct > 55  AND  disk.mb_per_s < 20,compute bound,"pure computation, nothing to read or write","tall sharp deflection, high perspective, no disk traffic",,
+ORDEAL,Act II - the innermost cave; the moment it might fail,vm.pageouts_per_s > 400  OR  vm.compress_per_s > 3000,memory pressure,the machine is out of RAM and is evicting,"colour key opens to AMBER, raster tears, heroes die",,
+RETURN,Act III - the road back; carrying the result home,disk.mb_per_s > 25  OR  disk.tps > 600,writing out,results being written to storage,"heavy flow toward DISK, heroes complete their route",,

@@ -1,0 +1,267 @@
+{
+ "name": "kaleidoscope shatter",
+ "saved": "2026-11-24T17:24:55.248370Z",
+ "note": "The screen cut into 44x28 tiles, each spun by its position, thrown onto a pulsing ring and smeared through the scan processor. Needs \"capture my screen\".",
+ "graph": {
+  "v": 1,
+  "nodes": [
+   {
+    "id": "475_1",
+    "type": "read.grid",
+    "x": 60,
+    "y": 60,
+    "p": {
+     "cols": 44,
+     "rows": 28,
+     "ax": 0,
+     "ay": 0,
+     "aw": 1,
+     "ah": 1
+    }
+   },
+   {
+    "id": "475_2",
+    "type": "lay.rotate",
+    "x": 400,
+    "y": 60,
+    "p": {
+     "a": 360,
+     "f": 0.11,
+     "mode": "phase",
+     "from": "index",
+     "scale": 5.5,
+     "target": "all"
+    }
+   },
+   {
+    "id": "475_3",
+    "type": "lfo",
+    "x": 60,
+    "y": 300,
+    "p": {
+     "f": 0.04,
+     "shape": "tri",
+     "amp": 1,
+     "off": 0
+    }
+   },
+   {
+    "id": "475_4",
+    "type": "remap",
+    "x": 320,
+    "y": 300,
+    "p": {
+     "il": -1,
+     "ih": 1,
+     "ol": 0,
+     "oh": 1.9,
+     "cl": "on"
+    }
+   },
+   {
+    "id": "475_5",
+    "type": "lay.ring",
+    "x": 600,
+    "y": 300,
+    "p": {
+     "amt": 0,
+     "r": 0.42,
+     "a": 0,
+     "px": 0.5,
+     "py": 0.5,
+     "target": "all"
+    }
+   },
+   {
+    "id": "475_6",
+    "type": "lay.drift",
+    "x": 600,
+    "y": 480,
+    "p": {
+     "amt": 58,
+     "rot": 46,
+     "rate": 0.8,
+     "seed": 3,
+     "target": "all"
+    }
+   },
+   {
+    "id": "475_7",
+    "type": "const",
+    "x": 60,
+    "y": 660,
+    "p": {
+     "v": 0.85
+    }
+   },
+   {
+    "id": "475_8",
+    "type": "out",
+    "x": 320,
+    "y": 660,
+    "p": {
+     "dest": "chain.mix",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "475_9",
+    "type": "const",
+    "x": 60,
+    "y": 750,
+    "p": {
+     "v": 40
+    }
+   },
+   {
+    "id": "475_10",
+    "type": "out",
+    "x": 320,
+    "y": 750,
+    "p": {
+     "dest": "scan.amp",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "475_11",
+    "type": "const",
+    "x": 60,
+    "y": 840,
+    "p": {
+     "v": 0.07
+    }
+   },
+   {
+    "id": "475_12",
+    "type": "out",
+    "x": 320,
+    "y": 840,
+    "p": {
+     "dest": "scan.key",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "475_13",
+    "type": "const",
+    "x": 60,
+    "y": 930,
+    "p": {
+     "v": 0.055
+    }
+   },
+   {
+    "id": "475_14",
+    "type": "out",
+    "x": 320,
+    "y": 930,
+    "p": {
+     "dest": "scan.density",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "475_15",
+    "type": "const",
+    "x": 60,
+    "y": 1020,
+    "p": {
+     "v": 0.94
+    }
+   },
+   {
+    "id": "475_16",
+    "type": "out",
+    "x": 320,
+    "y": 1020,
+    "p": {
+     "dest": "fb.gain",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "475_17",
+    "type": "col.ramp",
+    "x": 700,
+    "y": 1120,
+    "p": {
+     "c0": "#060010",
+     "p0": 0,
+     "c1": "#ff1b7a",
+     "p1": 0.3,
+     "c2": "#ffd21f",
+     "p2": 0.66,
+     "c3": "#ffffff",
+     "p3": 1,
+     "off": 0,
+     "g": 1,
+     "hue": 0,
+     "alpha": 1
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "475_1",
+    "fo": 0,
+    "to": "475_2",
+    "ti": 1
+   },
+   {
+    "from": "475_3",
+    "fo": 0,
+    "to": "475_4",
+    "ti": 0
+   },
+   {
+    "from": "475_4",
+    "fo": 0,
+    "to": "475_5",
+    "ti": 0
+   },
+   {
+    "from": "475_1",
+    "fo": 0,
+    "to": "475_5",
+    "ti": 1
+   },
+   {
+    "from": "475_1",
+    "fo": 0,
+    "to": "475_6",
+    "ti": 1
+   },
+   {
+    "from": "475_7",
+    "fo": 0,
+    "to": "475_8",
+    "ti": 0
+   },
+   {
+    "from": "475_9",
+    "fo": 0,
+    "to": "475_10",
+    "ti": 0
+   },
+   {
+    "from": "475_11",
+    "fo": 0,
+    "to": "475_12",
+    "ti": 0
+   },
+   {
+    "from": "475_13",
+    "fo": 0,
+    "to": "475_14",
+    "ti": 0
+   },
+   {
+    "from": "475_15",
+    "fo": 0,
+    "to": "475_16",
+    "ti": 0
+   }
+  ]
+ }
+}

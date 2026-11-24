@@ -1,0 +1,229 @@
+{
+ "name": "thermal",
+ "saved": "2026-11-24T17:24:55.224539Z",
+ "note": "Infrared camera: black through violet and red to white hot, keyed in hard bands so the screen separates into temperature zones. Works on any source.",
+ "graph": {
+  "v": 1,
+  "nodes": [
+   {
+    "id": "202_1",
+    "type": "const",
+    "x": 60,
+    "y": 60,
+    "p": {
+     "v": 1
+    }
+   },
+   {
+    "id": "202_2",
+    "type": "out",
+    "x": 320,
+    "y": 60,
+    "p": {
+     "dest": "chain.mix",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "202_3",
+    "type": "const",
+    "x": 60,
+    "y": 150,
+    "p": {
+     "v": 16
+    }
+   },
+   {
+    "id": "202_4",
+    "type": "out",
+    "x": 320,
+    "y": 150,
+    "p": {
+     "dest": "scan.amp",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "202_5",
+    "type": "const",
+    "x": 60,
+    "y": 330,
+    "p": {
+     "v": 2.3
+    }
+   },
+   {
+    "id": "202_6",
+    "type": "out",
+    "x": 320,
+    "y": 330,
+    "p": {
+     "dest": "scan.gainR",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "202_7",
+    "type": "const",
+    "x": 60,
+    "y": 420,
+    "p": {
+     "v": 1
+    }
+   },
+   {
+    "id": "202_8",
+    "type": "out",
+    "x": 320,
+    "y": 420,
+    "p": {
+     "dest": "scan.rowStep",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "202_9",
+    "type": "const",
+    "x": 60,
+    "y": 510,
+    "p": {
+     "v": 0.055
+    }
+   },
+   {
+    "id": "202_10",
+    "type": "out",
+    "x": 320,
+    "y": 510,
+    "p": {
+     "dest": "scan.density",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "202_11",
+    "type": "const",
+    "x": 60,
+    "y": 600,
+    "p": {
+     "v": 0.86
+    }
+   },
+   {
+    "id": "202_12",
+    "type": "out",
+    "x": 320,
+    "y": 600,
+    "p": {
+     "dest": "fb.gain",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "202_13",
+    "type": "lfo",
+    "x": 60,
+    "y": 700,
+    "p": {
+     "f": 0.035,
+     "shape": "sine",
+     "amp": 1,
+     "off": 0
+    }
+   },
+   {
+    "id": "202_14",
+    "type": "remap",
+    "x": 320,
+    "y": 700,
+    "p": {
+     "il": -1,
+     "ih": 1,
+     "ol": 0.0,
+     "oh": 0.26,
+     "cl": "on"
+    }
+   },
+   {
+    "id": "202_15",
+    "type": "out",
+    "x": 580,
+    "y": 700,
+    "p": {
+     "dest": "scan.key",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "202_16",
+    "type": "col.keyer",
+    "x": 640,
+    "y": 850,
+    "p": {
+     "c0": "#000018",
+     "a0": 0.35,
+     "e1": 0.26,
+     "c1": "#5b0fa8",
+     "a1": 0.8,
+     "e2": 0.55,
+     "c2": "#ff2a00",
+     "a2": 0.95,
+     "e3": 0.8,
+     "c3": "#fffbd0",
+     "a3": 1,
+     "soft": 0.04
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "202_1",
+    "fo": 0,
+    "to": "202_2",
+    "ti": 0
+   },
+   {
+    "from": "202_3",
+    "fo": 0,
+    "to": "202_4",
+    "ti": 0
+   },
+   {
+    "from": "202_5",
+    "fo": 0,
+    "to": "202_6",
+    "ti": 0
+   },
+   {
+    "from": "202_7",
+    "fo": 0,
+    "to": "202_8",
+    "ti": 0
+   },
+   {
+    "from": "202_9",
+    "fo": 0,
+    "to": "202_10",
+    "ti": 0
+   },
+   {
+    "from": "202_11",
+    "fo": 0,
+    "to": "202_12",
+    "ti": 0
+   },
+   {
+    "from": "202_13",
+    "fo": 0,
+    "to": "202_14",
+    "ti": 0
+   },
+   {
+    "from": "202_14",
+    "fo": 0,
+    "to": "202_15",
+    "ti": 0
+   }
+  ]
+ }
+}

@@ -1,0 +1,31 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>capture capability</title>
+<style>body{background:#0b0e12;color:#cfe;font:13px ui-monospace,Menlo,monospace;padding:18px}
+.ok{color:#6fbf86}.bad{color:#cf6b5e}</style></head>
+<body><pre id="o">checking…</pre>
+<script type="module">
+// Capability only. Nothing here triggers a permission prompt: we are asking
+// whether the API exists, not calling it.
+const r = { suite:'capture-capability', tests:[] };
+const T=(n,p,d)=>r.tests.push({name:n,pass:p,detail:d});
+
+const md = navigator.mediaDevices;
+T('navigator.mediaDevices exists', !!md, md ? 'yes' : 'no');
+T('getDisplayMedia is available', !!(md && typeof md.getDisplayMedia === 'function'),
+  md && typeof md.getDisplayMedia === 'function'
+    ? 'yes — the browser can capture the screen with no native code'
+    : 'no — a Swift ScreenCaptureKit bridge would be required');
+T('secure context', window.isSecureContext,
+  window.isSecureContext ? 'yes (localhost counts)' : 'NO — getDisplayMedia needs one');
+T('createImageBitmap for fast frame upload', typeof createImageBitmap === 'function', '');
+T('OffscreenCanvas', typeof OffscreenCanvas !== 'undefined', '');
+T('WebGL2 for the image chain', (()=>{try{return !!document.createElement('canvas').getContext('webgl2')}catch(e){return false}})(), '');
+T('MediaStreamTrackProcessor (zero-copy frames)',
+  typeof window.MediaStreamTrackProcessor === 'function',
+  typeof window.MediaStreamTrackProcessor === 'function' ? 'yes' : 'no — fall back to drawImage(video)');
+r.ua = navigator.userAgent.slice(0, 110);
+document.getElementById('o').innerHTML = r.tests.map(t =>
+  `<span class="${t.pass?'ok':'bad'}">${t.pass?' ok  ':'  --  '}${t.name.padEnd(42)}</span> ${t.detail}`).join('\n')
+  + '\n\n' + r.ua;
+fetch('/selftest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)});
+</script></body></html>

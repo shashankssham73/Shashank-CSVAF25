@@ -1,0 +1,1013 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scanimate Lab</title>
+<style>
+:root{--bg:#0b0c10;--panel:#14161d;--panel2:#1b1e27;--line:#2a2e3b;--text:#e8eaf0;--mute:#8d93a5;--accent:#4cc9f0;
+--source:#f5a524;--shape:#3ddc97;--xform:#4cc9f0;--palette:#c77dff;--render:#ff5d8f}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+header h1{font-size:15px;margin:0 8px 0 0;font-weight:650;letter-spacing:.02em}
+button,select,input[type=file]{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 9px}
+button{cursor:pointer}button:hover{border-color:var(--accent)}
+button.on{background:var(--accent);color:#04121a;border-color:var(--accent)}
+.warn{color:#ffd166;font-size:12px;margin-left:auto;max-width:520px}
+main{display:grid;grid-template-columns:minmax(300px,390px) 1fr;gap:14px;padding:14px 16px}
+#rack{display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 80px);overflow:auto;padding-right:4px}
+.addbar{display:flex;flex-wrap:wrap;gap:6px;position:sticky;top:0;background:var(--bg);padding-bottom:6px;z-index:2}
+.card{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--c,#555);border-radius:8px;padding:7px 9px}
+.card h3{margin:0 0 4px;font-size:12px;display:flex;gap:6px;align-items:center}
+.card h3 .id{color:var(--mute);font-weight:400}
+.card h3 .sp{flex:1}
+.card h3 button{padding:0 6px;font-size:11px}
+.card canvas.prev{background:#000;border-radius:4px;display:block;margin:2px 0 4px;width:96px;height:60px}
+.row{display:grid;grid-template-columns:62px 1fr 52px 96px;gap:5px;align-items:center;margin:2px 0}
+.row label{color:var(--mute);font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.row .val{font-variant-numeric:tabular-nums;font-size:11px;text-align:right}
+.row select{padding:1px 3px;font-size:11px;max-width:96px}
+.row input[type=range]{width:100%}
+.row.driven input[type=range]{opacity:.35;pointer-events:none}
+.meter{height:3px;background:#222;border-radius:2px;grid-column:2;margin-top:-3px}
+.meter i{display:block;height:100%;background:var(--c);width:0;border-radius:2px}
+.out-note{font-size:11px;color:var(--mute);margin-top:3px}
+#stage{min-width:0}
+#outwrap{background:#000;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+#out{display:block;width:100%;max-width:960px;height:auto;margin:0 auto}
+#tabs{display:flex;gap:6px;margin:12px 0 8px;flex-wrap:wrap}
+.studio{display:none;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.studio.show{display:block}
+.studio p.note{color:var(--mute);margin:4px 0 8px;font-size:12px;max-width:760px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.tools label{color:var(--mute);font-size:12px;display:flex;gap:5px;align-items:center}
+canvas.draw{display:block;width:100%;max-width:768px;background:#06070a;border:1px solid var(--line);border-radius:6px;touch-action:none;cursor:crosshair}
+canvas.pix{image-rendering:pixelated}
+.swatches{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.swatches button{display:flex;gap:6px;align-items:center}
+.swatches i{width:14px;height:14px;border-radius:3px;display:inline-block;border:1px solid #0006}
+pre#report{background:#0a0b0f;border:1px solid var(--line);border-radius:6px;padding:8px;margin:8px 0 0;font-size:12px;max-height:200px;overflow:auto;white-space:pre-wrap}
+@media(max-width:900px){main{grid-template-columns:1fr}#rack{max-height:none}.row{grid-template-columns:54px 1fr 48px 90px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Scanimate Lab</h1>
+  <button id="bPause">Pause</button>
+  <button id="bExport">Export patch</button>
+  <label class="fileb">Import <input id="bImport" type="file" accept=".json" style="width:150px"></label>
+  <button id="bReset">Reset to default</button>
+  <span class="warn">Flicker warning: moving, high-contrast, colour-cycling images can trigger discomfort or seizures in some people. Pause if unsure.</span>
+</header>
+<main>
+  <aside id="rack"></aside>
+  <section id="stage">
+    <div id="outwrap"><canvas id="out" width="480" height="300"></canvas></div>
+    <nav id="tabs"></nav>
+
+    <div class="studio" id="st-curve">
+      <p class="note">Draw a line with the mouse. It becomes a signal (0 at the bottom, 1 at the top) that loops over the duration set on the module. Connect it to any parameter in the rack. Below is its spectrum (FFT, mean removed): smooth curves put energy at low frequency, jagged curves spread it up.</p>
+      <div class="tools"><label>Module <select id="cvSel"></select></label><button id="cvAdd">+ Add curve module</button>
+        <button data-cv="flat">Flat</button><button data-cv="sine">Sine</button><button data-cv="saw">Saw</button><button data-cv="walk">Random walk</button><button data-cv="smooth">Smooth</button></div>
+      <canvas class="draw" id="cv" width="768" height="200"></canvas>
+      <canvas class="draw" id="cvSpec" width="768" height="90" style="margin-top:6px;cursor:default"></canvas>
+    </div>
+
+    <div class="studio" id="st-spec">
+      <p class="note">Paint a spectrogram. Left to right is time (about 3 s, looping), bottom to top is frequency (100 Hz to 8 kHz, log scale). Press Play and the picture is turned into sound with an inverse STFT (inverse FFT per column, windowed, overlap-added). The same picture also gives three signals (low, mid, high energy at the playhead) for the rack. Right mouse button or Erase removes. Sound is auto-levelled so it never clips.</p>
+      <div class="tools"><label>Module <select id="sgSel"></select></label><button id="sgAdd">+ Add spectrogram module</button>
+        <button id="sgPlay">Play sound</button><button id="sgClear">Clear</button><button id="sgUp">Rising sweep</button><button id="sgChord">Chord</button>
+        <label>Brush <input type="range" id="sgR" min="1" max="8" value="2"></label><label>Level <input type="range" id="sgV" min="20" max="255" value="200"></label><label><input type="checkbox" id="sgErase"> Erase</label></div>
+      <canvas class="draw" id="sg" width="768" height="288"></canvas>
+    </div>
+
+    <div class="studio" id="st-mask">
+      <p class="note">This is the 2D spectrum (FFT) of the picture above, live. Centre = slow changes, edges = fine detail, angle = direction of stripes. Paint on it: black areas are removed, then an inverse FFT shows the filtered image. The brush is point-symmetric so the result stays a real image. Average brightness is always kept. The filter works on a 256 by 256 copy of the image. Turn Mask on to see it in the main view.</p>
+      <div class="tools"><label>Mask <select id="mkOn"><option value="off">off</option><option value="on">on</option></select></label>
+        <label>In feedback loop <select id="mkLoop"><option value="no">no</option><option value="yes">yes</option></select></label>
+        <label>Mix <input type="range" id="mkMix" min="0" max="100" value="100"></label>
+        <label>Brush <input type="range" id="mkR" min="2" max="40" value="14"></label>
+        <label><input type="radio" name="mkMode" value="0" checked> Remove</label><label><input type="radio" name="mkMode" value="1"> Keep</label></div>
+      <div class="tools"><button data-mk="all">Pass all</button><button data-mk="low">Low-pass</button><button data-mk="high">High-pass</button><button data-mk="ring">Ring</button><button data-mk="wedge0">Wedge 0&deg;</button><button data-mk="wedge90">Wedge 90&deg;</button></div>
+      <canvas class="draw" id="mk" width="512" height="512" style="max-width:512px"></canvas>
+    </div>
+
+    <div class="studio" id="st-paint">
+      <p class="note">Paint a program with colours. Each colour is a block. Touching cells of the same colour make one region (one block). Regions that touch get wired: sources feed shapes and numbers, shapes feed transformers, transformers feed Render (white). A region's size sets one parameter (listed in the report). These are my own simple rules, not the Piet language. Click Compile and the rack is replaced by what you painted (Undo brings the old one back). Left mouse paints, right mouse erases.</p>
+      <div class="swatches" id="pgSw"></div>
+      <div class="tools"><button id="pgCompile">Compile to rack</button><button id="pgUndo">Undo compile</button><button id="pgExample">Load example</button><button id="pgClear">Clear</button></div>
+      <canvas class="draw" id="pg" width="640" height="384" style="max-width:640px"></canvas>
+      <pre id="report">Report appears here after Compile.</pre>
+    </div>
+  </section>
+</main>
+<script>
+// dsp.js — small DSP kit for the Scanimate-style lab. No DOM. Works in browser and node.
+(function (g) {
+  'use strict';
+  const TAU = Math.PI * 2;
+
+  // In-place radix-2 FFT. n must be a power of 2. inverse=true divides by n.
+  const twid = {};
+  function twiddles(n) {
+    if (twid[n]) return twid[n];
+    const c = new Float64Array(n / 2), s = new Float64Array(n / 2);
+    for (let k = 0; k < n / 2; k++) { c[k] = Math.cos((TAU * k) / n); s[k] = Math.sin((TAU * k) / n); }
+    return (twid[n] = { c, s });
+  }
+  function fft(re, im, inverse) {
+    const n = re.length, T = twiddles(n), sg = inverse ? 1 : -1;
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) {
+        let t = re[i]; re[i] = re[j]; re[j] = t;
+        t = im[i]; im[i] = im[j]; im[j] = t;
+      }
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+      const half = len >> 1, step = n / len;
+      for (let i = 0; i < n; i += len) {
+        for (let j = 0; j < half; j++) {
+          const cr = T.c[j * step], ci = sg * T.s[j * step];
+          const a = i + j, b = a + half;
+          const tr = re[b] * cr - im[b] * ci;
+          const ti = re[b] * ci + im[b] * cr;
+          re[b] = re[a] - tr; im[b] = im[a] - ti;
+          re[a] += tr; im[a] += ti;
+        }
+      }
+    }
+    if (inverse) for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+  }
+
+  // 2D FFT on an N x N complex image stored row-major. In place.
+  const tmp = {};
+  function fft2(re, im, N, inverse) {
+    const tr = tmp.tr && tmp.tr.length === N ? tmp.tr : (tmp.tr = new Float64Array(N));
+    const ti = tmp.ti && tmp.ti.length === N ? tmp.ti : (tmp.ti = new Float64Array(N));
+    for (let y = 0; y < N; y++) {
+      const o = y * N;
+      for (let x = 0; x < N; x++) { tr[x] = re[o + x]; ti[x] = im[o + x]; }
+      fft(tr, ti, inverse);
+      for (let x = 0; x < N; x++) { re[o + x] = tr[x]; im[o + x] = ti[x]; }
+    }
+    for (let x = 0; x < N; x++) {
+      for (let y = 0; y < N; y++) { tr[y] = re[y * N + x]; ti[y] = im[y * N + x]; }
+      fft(tr, ti, inverse);
+      for (let y = 0; y < N; y++) { re[y * N + x] = tr[y]; im[y * N + x] = ti[y]; }
+    }
+  }
+
+  function hann(N) {
+    const w = new Float64Array(N);
+    for (let i = 0; i < N; i++) w[i] = 0.5 - 0.5 * Math.cos((TAU * i) / N); // periodic
+    return w;
+  }
+
+  // ---------- Spectrogram painter -> sound (iSTFT) ----------
+  // grid: Uint8Array W*H, row 0 = highest frequency. Time runs along x.
+  const SPEC = { W: 256, H: 96, N: 1024, hop: 256, sr: 22050, fmin: 100, fmax: 8000 };
+  SPEC.dur = ((SPEC.W - 1) * SPEC.hop + SPEC.N) / SPEC.sr; // seconds
+
+  function rowFreq(y, o = SPEC) { // frequency (Hz) of paint row y
+    return o.fmin * Math.pow(o.fmax / o.fmin, 1 - y / (o.H - 1));
+  }
+
+  function paintColumn(grid, col, mags, o = SPEC) {
+    const { W, H, N, sr, fmin, fmax } = o;
+    const binHz = sr / N, L = Math.log(fmax / fmin);
+    const yOf = (f) => (1 - Math.log(f / fmin) / L) * (H - 1);
+    mags.fill(0);
+    for (let k = 1; k < N / 2; k++) {
+      const f = k * binHz;
+      if (f < fmin * 0.92 || f > fmax * 1.04) continue;
+      const y0 = yOf((k + 0.5) * binHz), y1 = yOf((k - 0.5) * binHz);
+      let v = 0;
+      if (y1 - y0 > 1) {
+        const a = Math.max(0, Math.ceil(y0)), b = Math.min(H - 1, Math.floor(y1));
+        for (let r = a; r <= b; r++) v = Math.max(v, grid[r * W + col]);
+      } else {
+        const y = Math.min(H - 1, Math.max(0, yOf(f)));
+        const r0 = Math.floor(y), r1 = Math.min(H - 1, r0 + 1), fr = y - r0;
+        v = grid[r0 * W + col] * (1 - fr) + grid[r1 * W + col] * fr;
+      }
+      mags[k] = v / 255;
+    }
+  }
+
+  // Build audio: each column -> spectrum with coherent phase -> iFFT -> Hann -> overlap-add.
+  function synthSpectrogram(grid, o = SPEC, peak = 0.6) {
+    const { W, N, hop } = o;
+    const total = (W - 1) * hop + N;
+    const out = new Float64Array(total);
+    const win = hann(N);
+    const phase = new Float64Array(N / 2 + 1);
+    const re = new Float64Array(N), im = new Float64Array(N);
+    const mags = new Float64Array(N / 2 + 1);
+    for (let t = 0; t < W; t++) {
+      paintColumn(grid, t, mags, o);
+      re.fill(0); im.fill(0);
+      for (let k = 1; k < N / 2; k++) {
+        const a = mags[k] * (N / 2);
+        if (a > 0) {
+          re[k] = a * Math.cos(phase[k]); im[k] = a * Math.sin(phase[k]);
+          re[N - k] = re[k]; im[N - k] = -im[k];
+        }
+        phase[k] = (phase[k] + (TAU * k * hop) / N) % TAU;
+      }
+      fft(re, im, true);
+      const base = t * hop;
+      for (let n = 0; n < N; n++) out[base + n] += re[n] * win[n] * 0.5; // Hann @ 75% overlap sums to 2
+    }
+    let mx = 0;
+    for (let i = 0; i < total; i++) mx = Math.max(mx, Math.abs(out[i]));
+    const s = mx > peak ? peak / mx : 1;
+    const f32 = new Float32Array(total);
+    const fade = 256;
+    for (let i = 0; i < total; i++) {
+      let e = 1;
+      if (i < fade) e = i / fade; else if (i > total - fade) e = (total - i) / fade;
+      f32[i] = out[i] * s * e;
+    }
+    return f32;
+  }
+
+  // ---------- 2D mask filter ----------
+  // mask: Float32Array N*N, DC at (N/2, N/2) (fft-shifted layout), values 0..1.
+  function maskPreset(N, kind, a, b) {
+    const m = new Float32Array(N * N), c = N / 2;
+    const soft = (d, edge, w) => { const t = Math.min(1, Math.max(0, (edge - d) / w + 0.5)); return t; };
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const u = x - c, v = y - c, r = Math.hypot(u, v);
+      let val = 1;
+      if (kind === 'low') val = soft(r, a, 3);
+      else if (kind === 'high') val = 1 - soft(r, a, 3);
+      else if (kind === 'ring') val = soft(r, b, 3) * (1 - soft(r, a, 3));
+      else if (kind === 'wedge') { // keep directions within +-b degrees of angle a (symmetric)
+        let d = Math.abs(((Math.atan2(v, u) * 180) / Math.PI - a) % 180);
+        if (d > 90) d = 180 - d;
+        val = r < 2 ? 1 : soft(d, b, 4);
+      } else if (kind === 'none') val = 0;
+      m[y * N + x] = val;
+    }
+    return m;
+  }
+
+  // Paint a soft round brush on the mask. val = 1 keeps, 0 removes. symmetric keeps output real.
+  function paintMask(mask, N, x, y, rad, val, symmetric = true, strength = 1) {
+    const stamp = (cx, cy) => {
+      const x0 = Math.max(0, Math.floor(cx - rad)), x1 = Math.min(N - 1, Math.ceil(cx + rad));
+      const y0 = Math.max(0, Math.floor(cy - rad)), y1 = Math.min(N - 1, Math.ceil(cy + rad));
+      for (let yy = y0; yy <= y1; yy++) for (let xx = x0; xx <= x1; xx++) {
+        const d = Math.hypot(xx - cx, yy - cy);
+        if (d > rad) continue;
+        const k = strength * (1 - d / rad);
+        const i = yy * N + xx;
+        mask[i] += (val - mask[i]) * Math.min(1, k * 1.5);
+      }
+    };
+    stamp(x, y);
+    if (symmetric) stamp((N - x) % N, (N - y) % N);
+  }
+
+  const buf = {};
+  // gray: Float64Array/Uint8 N*N (0..255). Returns {out, spec} ; out is Float64Array (not clamped).
+  function applyMask(gray, mask, N, mix = 1) {
+    const key = N;
+    const b = buf[key] || (buf[key] = { re: new Float64Array(N * N), im: new Float64Array(N * N), out: new Float64Array(N * N), spec: new Float32Array(N * N) });
+    const { re, im, out, spec } = b;
+    for (let i = 0; i < N * N; i++) { re[i] = gray[i]; im[i] = 0; }
+    fft2(re, im, N, false);
+    const h = N / 2;
+    let maxMag = 1e-9;
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const si = ((j + h) % N) * N + ((i + h) % N); // shifted display position of fft bin (i,j)
+      const mag = Math.log1p(Math.hypot(re[j * N + i], im[j * N + i]));
+      spec[si] = mag; if (mag > maxMag) maxMag = mag;
+      const mv = (i === 0 && j === 0) ? 1 : mask[si]; // DC always kept
+      re[j * N + i] *= mv; im[j * N + i] *= mv;
+    }
+    for (let i = 0; i < N * N; i++) spec[i] /= maxMag;
+    fft2(re, im, N, true);
+    for (let i = 0; i < N * N; i++) out[i] = gray[i] * (1 - mix) + re[i] * mix;
+    return { out, spec };
+  }
+
+  const api = { fft, fft2, hann, SPEC, rowFreq, paintColumn, synthSpectrogram, maskPreset, paintMask, applyMask };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else g.DSP = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+// core.js — graph model for the Scanimate-style lab. No DOM. Works in browser and node.
+// Rules (same spirit as your patcher):
+//  - every signal lives in 0..1; each numeric parameter maps 0..1 to its own min..max
+//  - nodes are evaluated in dependency order; a cycle reads the value from the previous frame
+(function (g) {
+  'use strict';
+  const TAU = Math.PI * 2;
+  const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
+
+  // ---------- tiny seeded random + mock telemetry ----------
+  function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+  const CHANNELS = ['cpu.busy_pct', 'vm.faults_per_s', 'net.in_bytes_per_s', 'disk.tps', 'batt.watts'];
+  const Tele = {
+    r: rng(7), v: {}, tgt: {}, t0: {},
+    set(name, v) { this.v[name] = clamp(v, 0, 1); }, // call this to feed real daemon values
+    step(dt, t) {
+      const r = this.r;
+      for (const c of CHANNELS) if (this.v[c] === undefined) { this.v[c] = 0.1; this.tgt[c] = 0.1; this.t0[c] = 0; }
+      // cpu: target jumps every 1-4 s, value follows
+      if (t > this.t0['cpu.busy_pct']) { this.t0['cpu.busy_pct'] = t + 1 + 3 * r(); this.tgt['cpu.busy_pct'] = 0.08 + 0.8 * r() * r(); }
+      this.v['cpu.busy_pct'] += (this.tgt['cpu.busy_pct'] - this.v['cpu.busy_pct']) * Math.min(1, dt * 6) + (r() - 0.5) * 0.03;
+      // faults, disk: quiet with decaying bursts
+      for (const c of ['vm.faults_per_s', 'disk.tps']) {
+        if (r() < dt * 0.6) this.tgt[c] = 0.4 + 0.6 * r();
+        this.tgt[c] *= Math.exp(-dt * 2.2);
+        this.v[c] = 0.04 + this.tgt[c] * (0.8 + 0.2 * r());
+      }
+      // net: transfer episodes
+      if (t > this.t0['net.in_bytes_per_s']) { this.t0['net.in_bytes_per_s'] = t + 2 + 5 * r(); this.tgt['net.in_bytes_per_s'] = r() < 0.5 ? 0.02 : 0.3 + 0.6 * r(); }
+      this.v['net.in_bytes_per_s'] += (this.tgt['net.in_bytes_per_s'] - this.v['net.in_bytes_per_s']) * Math.min(1, dt * 3);
+      // battery power: slow drift
+      this.v['batt.watts'] = 0.35 + 0.15 * Math.sin(t * 0.13) + 0.05 * Math.sin(t * 0.9);
+      for (const c of CHANNELS) this.v[c] = clamp(this.v[c], 0, 1);
+    },
+  };
+
+  // ---------- palettes ----------
+  const PRESETS = {
+    Tron: ['#000814', '#003566', '#00b4d8', '#90e0ef', '#ffffff'],
+    Sunset: ['#0b0020', '#5a0f6b', '#d62e79', '#ff8a3d', '#fff1c1'],
+    Phosphor: ['#000500', '#003b00', '#00a800', '#7dff7d', '#e8ffe8'],
+    Acid: ['#000000', '#3a0ca3', '#f72585', '#4cc9f0', '#caffbf'],
+    Ink: ['#05040a', '#2b2d42', '#8d99ae', '#edf2f4', '#ffffff'],
+  };
+  const hex2rgb = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  // LUT: 256 entries -> packed ABGR (little endian Uint32 for ImageData)
+  function makeLUT(colors, shift, steps, gamma) {
+    const lut = new Uint32Array(256), rgb = colors.map(hex2rgb), n = rgb.length - 1;
+    for (let i = 0; i < 256; i++) {
+      let t = i / 255;
+      t = Math.pow(t, gamma);
+      if (steps >= 2) t = Math.min(steps - 1, Math.floor(t * steps)) / (steps - 1);
+      t += shift; if (t > 1) t -= Math.floor(t - 1e-12); // shift wraps around, but 1.0 stays 1.0 when shift is 0
+      // brightness 0 should stay the first colour even with shift: only shift the non-zero part
+      if (i === 0 && shift > 0) t = 0;
+      const f = t * n, k = Math.min(n - 1, Math.floor(f)), fr = f - k;
+      const a = rgb[k], b = rgb[k + 1];
+      const r = a[0] + (b[0] - a[0]) * fr, gg = a[1] + (b[1] - a[1]) * fr, bl = a[2] + (b[2] - a[2]) * fr;
+      lut[i] = (255 << 24) | (Math.round(bl) << 16) | (Math.round(gg) << 8) | Math.round(r);
+    }
+    return lut;
+  }
+
+  // ---------- shapes ----------
+  // shape = { paths: [ { p:[x0,y0,x1,y1,...], closed:bool } ] } in unit space (-1..1)
+  const path = (p, closed) => ({ p, closed });
+  const shape = (paths) => ({ paths });
+  function polyPts(n, r, rot = 0) { const p = []; for (let i = 0; i < n; i++) { const a = rot + (TAU * i) / n; p.push(Math.cos(a) * r, Math.sin(a) * r); } return p; }
+  function mapShape(s, f) { return shape(s.paths.map((pa) => { const p = new Array(pa.p.length); for (let i = 0; i < pa.p.length; i += 2) { const q = f(pa.p[i], pa.p[i + 1]); p[i] = q[0]; p[i + 1] = q[1]; } return path(p, pa.closed); })); }
+  // insert points so no segment is longer than maxSeg (so warps can bend straight lines)
+  function densify(s, maxSeg = 0.04, cap = 24000) {
+    let total = 0;
+    return shape(s.paths.map((pa) => {
+      const out = [], n = pa.p.length / 2, segs = pa.closed ? n : n - 1;
+      for (let i = 0; i < segs; i++) {
+        const x0 = pa.p[2 * i], y0 = pa.p[2 * i + 1], j = (i + 1) % n, x1 = pa.p[2 * j], y1 = pa.p[2 * j + 1];
+        const k = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / maxSeg));
+        for (let m = 0; m < k && total < cap; m++, total++) out.push(x0 + ((x1 - x0) * m) / k, y0 + ((y1 - y0) * m) / k);
+      }
+      if (!pa.closed) out.push(pa.p[2 * (n - 1)], pa.p[2 * (n - 1) + 1]);
+      return path(out, pa.closed);
+    }));
+  }
+  function resamplePath(pa, M) {
+    const n = pa.p.length / 2, pts = [];
+    for (let i = 0; i < n; i++) pts.push([pa.p[2 * i], pa.p[2 * i + 1]]);
+    if (pa.closed) pts.push(pts[0]);
+    const cum = [0];
+    for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    const L = cum[cum.length - 1] || 1e-9, out = [];
+    let seg = 0;
+    for (let m = 0; m < M; m++) {
+      const d = (L * m) / (pa.closed ? M : M - 1);
+      while (seg < cum.length - 2 && cum[seg + 1] < d) seg++;
+      const span = cum[seg + 1] - cum[seg] || 1e-9, f = clamp((d - cum[seg]) / span, 0, 1);
+      out.push(pts[seg][0] + (pts[seg + 1][0] - pts[seg][0]) * f, pts[seg][1] + (pts[seg + 1][1] - pts[seg][1]) * f);
+    }
+    return out;
+  }
+  const rot2 = (x, y, a) => { const c = Math.cos(a), s = Math.sin(a); return [x * c - y * s, x * s + y * c]; };
+
+  // ---------- op registry ----------
+  const P = (k, def, min, max, o = {}) => Object.assign({ k, def, min, max, type: 'num' }, o);
+  const E = (k, opts, def) => ({ k, type: 'enum', opts, def: def || opts[0] });
+  const C = (k, def) => ({ k, type: 'color', def });
+  const NONE = {};
+
+  const OPS = {
+    // ===== sources (output: number 0..1) =====
+    lfo: { fam: 'source', label: 'LFO', params: [P('freq', 0.25, 0.02, 4, { log: 1 }), P('amp', 1, 0, 1), P('off', 0.5, 0, 1), E('wave', ['sine', 'tri', 'saw', 'square'])], outs: { out: 'num' },
+      eval(n, v, c) { const ph = ((c.t * v.freq) % 1 + 1) % 1; let w = v.wave === 'sine' ? Math.sin(TAU * ph) : v.wave === 'tri' ? 1 - 4 * Math.abs(ph - 0.5) : v.wave === 'saw' ? 2 * ph - 1 : ph < 0.5 ? 1 : -1; return { out: clamp(v.off + 0.5 * v.amp * w, 0, 1) }; } },
+    noise: { fam: 'source', label: 'Noise', params: [P('rate', 0.6, 0.05, 8, { log: 1 }), P('seed', 1, 1, 50, { int: 1 })], outs: { out: 'num' },
+      eval(n, v, c) { const s = n.s; if (s.seed !== v.seed) { s.seed = v.seed; s.r = rng(v.seed * 977); s.a = s.r(); s.b = s.r(); s.ph = 0; } s.ph += c.dt * v.rate; while (s.ph >= 1) { s.ph -= 1; s.a = s.b; s.b = s.r(); } const f = s.ph * s.ph * (3 - 2 * s.ph); return { out: s.a + (s.b - s.a) * f }; } },
+    tele: { fam: 'source', label: 'Telemetry (mock)', params: [E('channel', CHANNELS), P('smooth', 0.4, 0, 0.98)], outs: { out: 'num' },
+      eval(n, v) { const x = Tele.v[v.channel] || 0; n.s.y = n.s.y === undefined ? x : n.s.y + (x - n.s.y) * (1 - v.smooth); return { out: n.s.y }; } },
+    curve: { fam: 'source', label: 'Drawn curve', params: [P('dur', 6, 0.5, 30, { log: 1 }), E('mode', ['loop', 'pingpong', 'once'])], outs: { out: 'num' }, studio: 'curve',
+      eval(n, v, c) { let ph = c.t / v.dur; if (v.mode === 'once') ph = clamp(ph % 2 > 1 ? 1 : ph % 1, 0, 1); else if (v.mode === 'pingpong') { ph = ph % 2; if (ph > 1) ph = 2 - ph; } else ph = ph % 1; n.s.ph = ph; const L = n.curve.length, f = ph * (L - 1), i = Math.floor(f), j = Math.min(L - 1, i + 1); return { out: clamp(n.curve[i] + (n.curve[j] - n.curve[i]) * (f - i), 0, 1) }; } },
+    spec: { fam: 'source', label: 'Painted spectrogram', params: [], outs: { low: 'num', mid: 'num', high: 'num' }, studio: 'spec',
+      eval(n, v, c) { const S = c.SPEC, ph = c.specPhase ? c.specPhase(n) : (c.t / S.dur) % 1; n.s.ph = ph; const col = clamp(Math.floor(ph * S.W), 0, S.W - 1), H = S.H, th = H / 3; let lo = 0, mi = 0, hi = 0; for (let r = 0; r < H; r++) { const x = n.grid[r * S.W + col] / 255; if (r < th) hi += x; else if (r < 2 * th) mi += x; else lo += x; } return { low: clamp((lo / th) * 1.5, 0, 1), mid: clamp((mi / th) * 1.5, 0, 1), high: clamp((hi / th) * 1.5, 0, 1) }; } },
+    smooth: { fam: 'source', label: 'Smooth (low-pass)', params: [P('in', 0.5, 0, 1), P('amt', 0.9, 0, 0.995)], outs: { out: 'num' },
+      eval(n, v) { n.s.y = n.s.y === undefined ? v.in : n.s.y + (v.in - n.s.y) * (1 - v.amt); return { out: n.s.y }; } },
+    math: { fam: 'source', label: 'Math (a ? b)', params: [P('a', 0.5, 0, 1), P('b', 0.5, 0, 1), E('op', ['add', 'mul', 'min', 'max', 'diff'])], outs: { out: 'num' },
+      eval(n, v) { const o = v.op; return { out: clamp(o === 'add' ? (v.a + v.b) / 2 : o === 'mul' ? v.a * v.b : o === 'min' ? Math.min(v.a, v.b) : o === 'max' ? Math.max(v.a, v.b) : Math.abs(v.a - v.b), 0, 1) }; } },
+
+    // ===== shapes (output: shape) =====
+    polygon: { fam: 'shape', label: 'Polygon', params: [P('sides', 5, 3, 64, { int: 1 }), P('r', 0.6, 0.05, 1)], outs: { out: 'shape' },
+      eval(n, v) { return { out: shape([path(polyPts(v.sides, v.r, -Math.PI / 2), true)]) }; } },
+    star: { fam: 'shape', label: 'Star', params: [P('points', 5, 3, 12, { int: 1 }), P('r', 0.7, 0.05, 1), P('inner', 0.4, 0.1, 0.95)], outs: { out: 'shape' },
+      eval(n, v) { const p = []; for (let i = 0; i < v.points * 2; i++) { const r = i % 2 ? v.r * v.inner : v.r, a = -Math.PI / 2 + (Math.PI * i) / v.points; p.push(Math.cos(a) * r, Math.sin(a) * r); } return { out: shape([path(p, true)]) }; } },
+    lissa: { fam: 'shape', label: 'Lissajous', params: [P('a', 3, 1, 8, { int: 1 }), P('b', 2, 1, 8, { int: 1 }), P('phase', 0.25, 0, 1), P('r', 0.7, 0.05, 1)], outs: { out: 'shape' },
+      eval(n, v) { const p = []; for (let i = 0; i < 240; i++) { const t = (TAU * i) / 240; p.push(Math.sin(v.a * t + v.phase * TAU) * v.r, Math.sin(v.b * t) * v.r); } return { out: shape([path(p, true)]) }; } },
+    spiral: { fam: 'shape', label: 'Spiral', params: [P('turns', 3, 0.5, 10), P('r', 0.8, 0.05, 1)], outs: { out: 'shape' },
+      eval(n, v) { const p = [], M = 260; for (let i = 0; i <= M; i++) { const f = i / M, a = v.turns * TAU * f; p.push(Math.cos(a) * v.r * f, Math.sin(a) * v.r * f); } return { out: shape([path(p, false)]) }; } },
+    blob: { fam: 'shape', label: 'Blob', params: [P('r', 0.5, 0.05, 1), P('wobble', 0.3, 0, 0.8), P('speed', 0.5, 0, 3)], outs: { out: 'shape' },
+      eval(n, v, c) { n.s.t = (n.s.t || 0) + c.dt * v.speed; const t = n.s.t, p = []; for (let i = 0; i < 120; i++) { const a = (TAU * i) / 120, rr = v.r * (1 + v.wobble * (0.5 * Math.sin(3 * a + t) + 0.3 * Math.sin(5 * a - 1.3 * t) + 0.2 * Math.sin(2 * a + 0.7 * t))); p.push(Math.cos(a) * rr, Math.sin(a) * rr); } return { out: shape([path(p, true)]) }; } },
+    grid: { fam: 'shape', label: 'Grid (test pattern)', params: [P('cells', 8, 2, 16, { int: 1 }), P('size', 0.8, 0.1, 1)], outs: { out: 'shape' },
+      eval(n, v) { const ps = [], k = v.cells, s = v.size; for (let i = 0; i <= k; i++) { const u = -s + (2 * s * i) / k; ps.push(path([u, -s, u, s], false), path([-s, u, s, u], false)); } return { out: shape(ps) }; } },
+
+    // ===== transformers (input: shape, output: shape) =====
+    move: { fam: 'xform', label: 'Move', ports: { shape: 'shape' }, params: [P('x', 0, -1, 1), P('y', 0, -1, 1)], outs: { out: 'shape' },
+      eval(n, v, c, i) { return { out: i.shape ? mapShape(i.shape, (x, y) => [x + v.x, y + v.y]) : null }; } },
+    scale: { fam: 'xform', label: 'Scale', ports: { shape: 'shape' }, params: [P('s', 1, 0.05, 2.5), P('squeeze', 1, 0.2, 3)], outs: { out: 'shape' },
+      eval(n, v, c, i) { return { out: i.shape ? mapShape(i.shape, (x, y) => [x * v.s * v.squeeze, y * v.s]) : null }; } },
+    rotate: { fam: 'xform', label: 'Rotate', ports: { shape: 'shape' }, params: [P('deg', 0, -180, 180)], outs: { out: 'shape' },
+      eval(n, v, c, i) { const a = (v.deg * Math.PI) / 180; return { out: i.shape ? mapShape(i.shape, (x, y) => rot2(x, y, a)) : null }; } },
+    mirror: { fam: 'xform', label: 'Mirror / kaleidoscope', ports: { shape: 'shape' }, params: [P('n', 3, 1, 12, { int: 1 }), E('flip', ['no', 'yes'])], outs: { out: 'shape' },
+      eval(n, v, c, i) { if (!i.shape) return { out: null }; const ps = []; for (let k = 0; k < v.n; k++) { const a = (TAU * k) / v.n; const s = mapShape(i.shape, (x, y) => rot2(x, y, a)); ps.push(...s.paths); if (v.flip === 'yes') ps.push(...mapShape(i.shape, (x, y) => rot2(-x, y, a)).paths); } return { out: shape(ps) }; } },
+    repeat: { fam: 'xform', label: 'Repeat (echo)', ports: { shape: 'shape' }, params: [P('count', 6, 1, 14, { int: 1 }), P('rot', 8, -40, 40), P('shrink', 0.88, 0.6, 1), P('dx', 0, -0.2, 0.2)], outs: { out: 'shape' },
+      eval(n, v, c, i) { if (!i.shape) return { out: null }; const ps = []; for (let k = 0; k < v.count; k++) { const a = (v.rot * Math.PI * k) / 180, s = Math.pow(v.shrink, k); ps.push(...mapShape(i.shape, (x, y) => { const q = rot2(x * s, y * s, a); return [q[0] + v.dx * k, q[1]]; }).paths); } return { out: shape(ps) }; } },
+    warp: { fam: 'xform', label: 'Warp (Scanimate bend)', ports: { shape: 'shape' }, params: [P('ampx', 0.1, 0, 0.5), P('ampy', 0.1, 0, 0.5), P('freq', 1.5, 0.2, 6), P('phase', 0, 0, 1)], outs: { out: 'shape' },
+      eval(n, v, c, i) { if (!i.shape) return { out: null }; const ph = v.phase * TAU; return { out: mapShape(densify(i.shape), (x, y) => [x + v.ampx * Math.sin(TAU * v.freq * y + ph), y + v.ampy * Math.sin(TAU * v.freq * x + ph)]) }; } },
+    twist: { fam: 'xform', label: 'Twist', ports: { shape: 'shape' }, params: [P('amt', 0, -4, 4)], outs: { out: 'shape' },
+      eval(n, v, c, i) { return { out: i.shape ? mapShape(densify(i.shape), (x, y) => rot2(x, y, v.amt * Math.hypot(x, y))) : null }; } },
+    morph: { fam: 'xform', label: 'Morph A to B', ports: { a: 'shape', b: 'shape' }, params: [P('t', 0.5, 0, 1)], outs: { out: 'shape' },
+      eval(n, v, c, i) { if (!i.a || !i.b) return { out: i.a || i.b || null }; const M = 160, cnt = Math.max(i.a.paths.length, i.b.paths.length), ps = []; for (let k = 0; k < cnt; k++) { const pa = i.a.paths[k % i.a.paths.length], pb = i.b.paths[k % i.b.paths.length], ra = resamplePath(pa, M), rb = resamplePath(pb, M), p = new Array(2 * M); for (let m = 0; m < 2 * M; m++) p[m] = ra[m] + (rb[m] - ra[m]) * v.t; ps.push(path(p, pa.closed && pb.closed)); } return { out: shape(ps) }; } },
+
+    // ===== palettes (output: palette) =====
+    palette: { fam: 'palette', label: 'Palette', params: [E('preset', Object.keys(PRESETS)), P('shift', 0, 0, 1), P('steps', 0, 0, 12, { int: 1 }), P('gamma', 1, 0.3, 2.5)], outs: { out: 'pal' },
+      eval(n, v) { return { out: { colors: PRESETS[v.preset], shift: v.shift, steps: v.steps, gamma: v.gamma } }; } },
+    gradient: { fam: 'palette', label: 'Gradient (3 colours)', params: [C('c1', '#05010f'), C('c2', '#ff3d81'), C('c3', '#fff3b0'), P('shift', 0, 0, 1), P('steps', 0, 0, 12, { int: 1 }), P('gamma', 1, 0.3, 2.5)], outs: { out: 'pal' },
+      eval(n, v) { return { out: { colors: [v.c1, v.c2, v.c3], shift: v.shift, steps: v.steps, gamma: v.gamma } }; } },
+
+    // ===== singletons: render (colorizer + feedback) and mask filter =====
+    render: { fam: 'render', label: 'Render: feedback + colorizer', single: true, ports: { shape: 'shape', shape2: 'shape', pal: 'pal' },
+      params: [P('bright', 0.7, 0.1, 1), P('width', 1.2, 0.5, 6), P('glow', 3, 0, 24), P('fb', 0.82, 0, 0.985), P('zoom', 1.006, 0.97, 1.04), P('rot', 0.3, -4, 4), P('cycle', 0, 0, 1)], outs: {},
+      eval() { return {}; } },
+    mask: { fam: 'render', label: 'Mask filter (draw on the 2D spectrum)', single: true, studio: 'mask', params: [E('on', ['off', 'on']), P('mix', 1, 0, 1), E('inloop', ['no', 'yes'])], outs: { energy: 'num' },
+      eval(n) { return { energy: n.s.energy || 0 }; } },
+  };
+
+  // ---------- graph ----------
+  const CURVE_N = 256;
+  function defaultCurve() { const a = new Float32Array(CURVE_N); for (let i = 0; i < CURVE_N; i++) a[i] = 0.5 + 0.4 * Math.sin((TAU * i) / CURVE_N); return a; }
+  function defaultGrid(SPEC) {
+    const g = new Uint8Array(SPEC.W * SPEC.H);
+    for (let x = 0; x < SPEC.W; x++) {
+      const y1 = Math.round(48 + 30 * Math.sin((x / SPEC.W) * TAU * 1.5)), y2 = Math.round(30 - 10 * Math.cos((x / SPEC.W) * TAU));
+      for (const [y, v] of [[y1, 220], [y2, 150]]) for (let d = -1; d <= 1; d++) { const yy = y + d; if (yy >= 0 && yy < SPEC.H) g[yy * SPEC.W + x] = Math.max(g[yy * SPEC.W + x], v - Math.abs(d) * 60); }
+    }
+    return g;
+  }
+  function makeNode(op, id, extra = {}) {
+    const def = OPS[op]; if (!def) throw new Error('unknown op ' + op);
+    const n = { id, op, p: {}, in: {}, s: {} };
+    for (const pr of def.params) n.p[pr.k] = pr.def;
+    if (op === 'curve') n.curve = defaultCurve();
+    if (op === 'spec') n.grid = defaultGrid(g.DSP ? g.DSP.SPEC : (extra.SPEC || { W: 256, H: 96 }));
+    if (op === 'mask') n.mask = new Float32Array(256 * 256).fill(1);
+    return n;
+  }
+  function newGraph() { return { nodes: {}, counter: {} }; }
+  function addNode(gr, op, id) {
+    if (!id) { gr.counter[op] = (gr.counter[op] || 0) + 1; id = op + gr.counter[op]; while (gr.nodes[id]) { gr.counter[op]++; id = op + gr.counter[op]; } }
+    gr.nodes[id] = makeNode(op, id); return gr.nodes[id];
+  }
+  function removeNode(gr, id) {
+    if (OPS[gr.nodes[id].op].single) return;
+    delete gr.nodes[id];
+    for (const n of Object.values(gr.nodes)) for (const k of Object.keys(n.in)) if (n.in[k] && n.in[k].from === id) delete n.in[k];
+  }
+  function connect(gr, toId, port, fromId, fromPort) {
+    if (fromId == null) { delete gr.nodes[toId].in[port]; return; }
+    gr.nodes[toId].in[port] = { from: fromId, port: fromPort || 'out' };
+  }
+  const mapParam = (pr, s) => { let x; if (pr.log) x = pr.min * Math.pow(pr.max / pr.min, s); else x = pr.min + (pr.max - pr.min) * s; return pr.int ? Math.round(x) : x; };
+  const unmapParam = (pr, x) => (pr.log ? Math.log(x / pr.min) / Math.log(pr.max / pr.min) : (x - pr.min) / (pr.max - pr.min));
+
+  // ctx: { t, dt, outs (last frame outs), SPEC, specPhase }
+  function evaluate(gr, ctx) {
+    const state = {}, order = [], last = ctx.outs || {}, outs = {}, resolved = {}, inputs = {};
+    const visit = (id) => { const n = gr.nodes[id]; if (!n || state[id]) return; state[id] = 1; for (const r of Object.values(n.in)) if (r && gr.nodes[r.from]) visit(r.from); state[id] = 2; order.push(id); };
+    for (const id of Object.keys(gr.nodes)) visit(id);
+    const read = (r) => { const src = outs[r.from] || last[r.from]; return src ? src[r.port || 'out'] : undefined; };
+    for (const id of order) {
+      const n = gr.nodes[id], def = OPS[n.op], v = {}, ins = {};
+      for (const pr of def.params) {
+        if (pr.type === 'num') { const r = n.in[pr.k]; let s; if (r) s = read(r); v[pr.k] = typeof s === 'number' ? mapParam(pr, clamp(s, 0, 1)) : n.p[pr.k]; if (pr.int) v[pr.k] = Math.round(v[pr.k]); } else v[pr.k] = n.p[pr.k];
+      }
+      for (const port of Object.keys(def.ports || {})) { const r = n.in[port]; ins[port] = r ? read(r) || null : null; }
+      outs[id] = def.eval(n, v, ctx, ins) || NONE;
+      resolved[id] = v; inputs[id] = ins;
+    }
+    ctx.outs = outs; ctx.resolved = resolved; ctx.ins = inputs;
+    return outs;
+  }
+
+  // ---------- (de)serialize ----------
+  const b64 = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 8192) s += String.fromCharCode.apply(null, u8.subarray(i, i + 8192)); return typeof btoa !== 'undefined' ? btoa(s) : Buffer.from(s, 'binary').toString('base64'); };
+  const unb64 = (str) => { const s = typeof atob !== 'undefined' ? atob(str) : Buffer.from(str, 'base64').toString('binary'); const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
+  function serialize(gr) {
+    const nodes = Object.values(gr.nodes).map((n) => { const o = { id: n.id, op: n.op, p: n.p, in: n.in }; if (n.curve) o.curve = Array.from(n.curve, (x) => +x.toFixed(4)); if (n.grid) o.grid = b64(n.grid); if (n.mask) o.mask = b64(Uint8Array.from(n.mask, (x) => Math.round(clamp(x, 0, 1) * 255))); return o; });
+    return JSON.stringify({ v: 1, nodes, counter: gr.counter });
+  }
+  function deserialize(str) {
+    const d = JSON.parse(str), gr = newGraph(); gr.counter = d.counter || {};
+    for (const o of d.nodes) {
+      if (!OPS[o.op]) continue;
+      const n = makeNode(o.op, o.id); Object.assign(n.p, o.p); n.in = o.in || {};
+      if (o.curve) n.curve = Float32Array.from(o.curve);
+      if (o.grid) n.grid = unb64(o.grid);
+      if (o.mask) n.mask = Float32Array.from(unb64(o.mask), (x) => x / 255);
+      gr.nodes[o.id] = n;
+    }
+    return gr;
+  }
+
+  function defaultGraph() {
+    const gr = newGraph();
+    addNode(gr, 'render', 'render'); addNode(gr, 'mask', 'mask');
+    const lfo = addNode(gr, 'lfo'); lfo.p.freq = 0.12;
+    const tele = addNode(gr, 'tele');
+    const star = addNode(gr, 'star'); star.p.points = 5;
+    const warp = addNode(gr, 'warp'); const rot = addNode(gr, 'rotate'); const rep = addNode(gr, 'repeat');
+    const pal = addNode(gr, 'palette');
+    connect(gr, rot.id, 'shape', star.id); connect(gr, rot.id, 'deg', lfo.id);
+    connect(gr, warp.id, 'shape', rot.id); connect(gr, warp.id, 'ampx', tele.id); gr.nodes[warp.id].p.ampy = 0.06;
+    connect(gr, rep.id, 'shape', warp.id);
+    connect(gr, 'render', 'shape', rep.id); connect(gr, 'render', 'pal', pal.id);
+    const cv = addNode(gr, 'curve'); connect(gr, rep.id, 'rot', cv.id);   // drawn curve bends the echo angle
+    const sp = addNode(gr, 'spec'); connect(gr, warp.id, 'phase', sp.id, 'mid'); // painted spectrogram moves the warp phase
+    return gr;
+  }
+
+
+  // ---------- paint-a-program: colour regions on a grid become modules ----------
+  // Rules (my own simple rules, NOT Piet): same colour touching by edge = one region = one module.
+  // Different regions that touch are wired: lower family rank -> higher rank (source < shape < transform = palette < render).
+  // The wire goes into the first free input of the matching type. Region size sets one chosen parameter.
+  const PAINT = [
+    { op: 'lfo', c: '#e63946', name: 'LFO', size: 'freq' },
+    { op: 'tele', c: '#f4a261', name: 'Telemetry', size: null },
+    { op: 'smooth', c: '#e9c46a', name: 'Smooth', size: 'amt' },
+    { op: 'star', c: '#2a9d8f', name: 'Star', size: 'r' },
+    { op: 'lissa', c: '#8ac926', name: 'Lissajous', size: 'r' },
+    { op: 'warp', c: '#4cc9f0', name: 'Warp', size: null },
+    { op: 'rotate', c: '#4361ee', name: 'Rotate', size: null },
+    { op: 'repeat', c: '#9d4edd', name: 'Repeat', size: 'count' },
+    { op: 'palette', c: '#f72585', name: 'Palette', size: null },
+    { op: 'render', c: '#f5f5f5', name: 'Render', size: null },
+  ];
+  const RANK = { source: 0, shape: 1, xform: 2, palette: 2, render: 3 };
+  function compilePaint(cells, W, H, old) {
+    const rep = [], lab = new Int16Array(W * H).fill(-1), regs = [];
+    for (let i = 0; i < W * H; i++) {
+      if (!cells[i] || lab[i] >= 0) continue;
+      const r = { v: cells[i], cells: [], sx: 0 }, q = [i]; lab[i] = regs.length;
+      while (q.length) { const c = q.pop(); r.cells.push(c); r.sx += c % W; const x = c % W, y = (c / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; const j = ny * W + nx; if (cells[j] === r.v && lab[j] < 0) { lab[j] = regs.length; q.push(j); } } }
+      r.cx = r.sx / r.cells.length; r.op = PAINT[r.v - 1].op; regs.push(r);
+    }
+    const touch = new Set();
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const a = lab[y * W + x]; if (a < 0) continue; for (const [dx, dy] of [[1, 0], [0, 1]]) { const nx = x + dx, ny = y + dy; if (nx >= W || ny >= H) continue; const b = lab[ny * W + nx]; if (b >= 0 && b !== a) touch.add(Math.min(a, b) * 10000 + Math.max(a, b)); } }
+    const gr = newGraph(); gr.nodes.render = old.nodes.render; gr.nodes.mask = old.nodes.mask; gr.nodes.render.in = {};
+    gr.counter = {};
+    const ids = regs.map((r) => (r.op === 'render' ? 'render' : addNode(gr, r.op).id));
+    const used = (id, port) => !!gr.nodes[id].in[port];
+    const freePort = (id, type) => {
+      const def = OPS[gr.nodes[id].op];
+      for (const [pt, ty] of Object.entries(def.ports || {})) if (ty === type && !used(id, pt)) return pt;
+      if (type === 'num') for (const pr of def.params) if (pr.type === 'num' && !used(id, pr.k)) return pr.k;
+      return null;
+    };
+    const accepts = (id, type) => { const def = OPS[gr.nodes[id].op]; return Object.values(def.ports || {}).includes(type) || (type === 'num' && def.params.some((p) => p.type === 'num')); };
+    const pairs = [...touch].map((k) => [Math.floor(k / 10000), k % 10000]).sort((p, q) => regs[p[0]].cx - regs[q[0]].cx);
+    for (const [a, b] of pairs) {
+      const ra = RANK[OPS[regs[a].op].fam], rb = RANK[OPS[regs[b].op].fam];
+      let s, d;
+      if (ra < rb) { s = a; d = b; } else if (rb < ra) { s = b; d = a; } else if (OPS[regs[a].op].fam === 'xform' && OPS[regs[b].op].fam === 'xform') { [s, d] = regs[a].cx <= regs[b].cx ? [a, b] : [b, a]; } else continue;
+      const type = Object.values(OPS[regs[s].op].outs)[0];
+      if (!accepts(ids[d], type)) continue;
+      const port = freePort(ids[d], type);
+      if (!port) { rep.push(`! ${ids[s]} touches ${ids[d]} but ${ids[d]} has no free ${type} input`); continue; }
+      connect(gr, ids[d], port, ids[s]); rep.push(`${ids[s]} -> ${ids[d]}.${port}`);
+    }
+    regs.forEach((r, i) => {
+      const sz = PAINT[r.v - 1].size; if (!sz || used(ids[i], sz)) return;
+      const pr = OPS[r.op].params.find((p) => p.k === sz), f = clamp(r.cells.length / 16, 0.15, 1);
+      gr.nodes[ids[i]].p[sz] = mapParam(pr, f); rep.push(`${ids[i]}: size ${r.cells.length} cells -> ${sz} = ${gr.nodes[ids[i]].p[sz].toFixed(2)}`);
+    });
+    if (!regs.some((r) => r.op === 'render')) rep.push('! no white region: nothing is wired to Render');
+    return { graph: gr, report: rep, regions: regs.length };
+  }
+
+
+  // ASCII helper + the example shown in the UI (tested in test_paint.js)
+  const PAINT_KEYS = { L: 1, T: 2, M: 3, S: 4, Y: 5, W: 6, R: 7, P: 8, C: 9, X: 10 };
+  const PAINT_EXAMPLE = [
+    'LLL.TTTT............',
+    'LLL.WWWWWWWWXXXXXXXX',
+    'RRRRWWWWWWWWXXXXXXXX',
+    'SSS.WWWWWWWWCCCCCCCC',
+    'SSS.................',
+    'SSS.................',
+    '....................',
+    '....................',
+    '....................',
+    '....................',
+    '....................',
+    '....................',
+  ];
+  function paintFromArt(art, W = 20, H = 12) {
+    const cells = new Uint8Array(W * H);
+    art.forEach((row, y) => [...row].forEach((ch, x) => { if (PAINT_KEYS[ch] && x < W && y < H) cells[y * W + x] = PAINT_KEYS[ch]; }));
+    return cells;
+  }
+
+  const api = { PAINT_EXAMPLE, paintFromArt, PAINT, compilePaint, OPS, PRESETS, CHANNELS, Tele, rng, makeLUT, newGraph, addNode, removeNode, connect, evaluate, serialize, deserialize, defaultGraph, mapParam, unmapParam, mapShape, densify, resamplePath, CURVE_N, hex2rgb };
+  if (typeof module !== 'undefined' && module.exports) { g.DSP = g.DSP || require('./dsp.js'); module.exports = api; } else g.CORE = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const { OPS, Tele, evaluate, addNode, removeNode, connect, mapParam, unmapParam, makeLUT, PRESETS } = CORE;
+  const SPEC = DSP.SPEC;
+  const $ = (id) => document.getElementById(id);
+  const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
+  const FAM = { source: ['Source', '--source'], shape: ['Shape', '--shape'], xform: ['Transformer', '--xform'], palette: ['Palette', '--palette'], render: ['Output', '--render'] };
+  const FAMORDER = ['source', 'shape', 'xform', 'palette', 'render'];
+  const famColor = (f) => getComputedStyle(document.documentElement).getPropertyValue(FAM[f][1]).trim();
+
+  function h(tag, attrs, ...kids) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+      else if (v !== false && v != null) e.setAttribute(k, v === true ? '' : v);
+    }
+    for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
+    return e;
+  }
+
+  // ---------------- state ----------------
+  let graph = CORE.defaultGraph();
+  const ctx = { t: 0, dt: 1 / 60, outs: {}, SPEC, specPhase: null };
+  let paused = false, T = 0, last = performance.now();
+  let tab = 'curve', prevGraphJSON = null;
+  const sel = { curve: null, spec: null };
+  let meters = [], previews = [];
+  const maskState = { spec: null };
+
+  // ---------------- output renderer (Scanimate chain: grey scan -> feedback -> optional 2D filter -> colorizer) ----------------
+  const W = 480, H = 300;
+  const mkBuf = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return { c, g: c.getContext('2d', { willReadFrequently: true }) }; };
+  let cur = mkBuf(), nxt = mkBuf();
+  cur.g.fillStyle = '#000'; cur.g.fillRect(0, 0, W, H);
+  const out = $('out'), octx = out.getContext('2d');
+  const outImg = octx.createImageData(W, H), out32 = new Uint32Array(outImg.data.buffer);
+  const proc = document.createElement('canvas'); proc.width = proc.height = 256; const pg = proc.getContext('2d', { willReadFrequently: true });
+  const back = document.createElement('canvas'); back.width = W; back.height = H; const bg = back.getContext('2d', { willReadFrequently: true });
+  const gray256 = new Float64Array(256 * 256), img256 = pg.createImageData(256, 256);
+
+  function applyMaskStage(src, mk, mv, needOut) {
+    pg.drawImage(src.c, 0, 0, 256, 256);
+    const d = pg.getImageData(0, 0, 256, 256).data;
+    for (let i = 0; i < 65536; i++) gray256[i] = d[4 * i];
+    const r = DSP.applyMask(gray256, mk.mask, 256, needOut ? mv.mix : 0);
+    maskState.spec = r.spec;
+    if (!needOut) return null;
+    let diff = 0;
+    for (let i = 0; i < 65536; i++) { const v = clamp(r.out[i], 0, 255); diff += Math.abs(v - gray256[i]); const o = 4 * i; img256.data[o] = img256.data[o + 1] = img256.data[o + 2] = v; img256.data[o + 3] = 255; }
+    mk.s.energy = (mk.s.energy || 0) * 0.8 + 0.2 * clamp((diff / 65536 / 255) * 8, 0, 1);
+    pg.putImageData(img256, 0, 0);
+    bg.drawImage(proc, 0, 0, W, H);
+    return bg.getImageData(0, 0, W, H);
+  }
+
+  function render() {
+    const v = ctx.resolved.render, ins = ctx.ins.render, mk = graph.nodes.mask, mv = ctx.resolved.mask;
+    const g = nxt.g;
+    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    g.save(); g.globalAlpha = v.fb; g.translate(W / 2, H / 2); g.rotate((v.rot * Math.PI) / 180); g.scale(v.zoom, v.zoom); g.translate(-W / 2, -H / 2); g.drawImage(cur.c, 0, 0); g.restore();
+    g.globalAlpha = 1; g.globalCompositeOperation = 'lighter';
+    const b = Math.round(v.bright * 255), col = `rgb(${b},${b},${b})`;
+    g.strokeStyle = col; g.shadowColor = col; g.shadowBlur = v.glow; g.lineWidth = v.width; g.lineJoin = 'round'; g.lineCap = 'round';
+    const S = H * 0.45;
+    g.beginPath();
+    for (const sh of [ins.shape, ins.shape2]) {
+      if (!sh) continue;
+      for (const pa of sh.paths) {
+        const p = pa.p; g.moveTo(W / 2 + p[0] * S, H / 2 + p[1] * S);
+        for (let i = 2; i < p.length; i += 2) g.lineTo(W / 2 + p[i] * S, H / 2 + p[i + 1] * S);
+        if (pa.closed) g.closePath();
+      }
+    }
+    g.stroke(); g.shadowBlur = 0; g.globalCompositeOperation = 'source-over';
+    let data = null;
+    const maskOn = mv.on === 'on';
+    if (maskOn || tab === 'mask') {
+      const f = applyMaskStage(nxt, mk, mv, maskOn);
+      if (f) { data = f; if (mv.inloop === 'yes') g.putImageData(f, 0, 0); }
+    }
+    if (!data) data = g.getImageData(0, 0, W, H);
+    const pal = ins.pal || { colors: PRESETS.Tron, shift: 0, steps: 0, gamma: 1 };
+    const lut = makeLUT(pal.colors, (pal.shift + v.cycle) % 1, pal.steps, pal.gamma), px = data.data;
+    for (let i = 0, n = W * H; i < n; i++) out32[i] = lut[px[4 * i]];
+    octx.putImageData(outImg, 0, 0);
+    const t = cur; cur = nxt; nxt = t;
+  }
+
+  // ---------------- rack ----------------
+  function outputsOfType(type, exceptId) {
+    const res = [];
+    for (const n of Object.values(graph.nodes)) {
+      if (n.id === exceptId) continue;
+      for (const [port, ty] of Object.entries(OPS[n.op].outs)) if (ty === type) res.push({ label: port === 'out' ? n.id : n.id + '.' + port, from: n.id, port });
+    }
+    return res;
+  }
+  function srcSelect(n, key, type) {
+    const cur = n.in[key], s = h('select', { title: 'where this value comes from' });
+    s.append(h('option', { value: '' }, type === 'num' ? 'manual' : '(none)'));
+    for (const o of outputsOfType(type, n.id)) { const op = h('option', { value: o.from + '|' + o.port }, o.label); if (cur && cur.from === o.from && cur.port === o.port) op.selected = true; s.append(op); }
+    s.addEventListener('change', () => { if (!s.value) connect(graph, n.id, key, null); else { const [f, p] = s.value.split('|'); connect(graph, n.id, key, f, p); } renderRack(); });
+    return s;
+  }
+  const fmt = (pr, x) => (pr.int ? String(Math.round(x)) : Math.abs(x) >= 100 ? x.toFixed(0) : Math.abs(x) >= 10 ? x.toFixed(1) : x.toFixed(2));
+
+  function renderRack() {
+    const el = $('rack'); el.innerHTML = ''; meters = []; previews = [];
+    const bar = h('div', { class: 'addbar' });
+    for (const fam of ['source', 'shape', 'xform', 'palette']) {
+      const s = h('select', { title: 'add a ' + FAM[fam][0].toLowerCase() }, h('option', { value: '' }, '+ ' + FAM[fam][0]));
+      for (const [op, d] of Object.entries(OPS)) if (d.fam === fam) s.append(h('option', { value: op }, d.label));
+      s.addEventListener('change', () => { if (s.value) { const n = addNode(graph, s.value); renderRack(); const st = OPS[n.op].studio; if (st) openTab(st, n.id); } });
+      bar.append(s);
+    }
+    el.append(bar);
+    const ids = Object.keys(graph.nodes).sort((a, b) => FAMORDER.indexOf(OPS[graph.nodes[a].op].fam) - FAMORDER.indexOf(OPS[graph.nodes[b].op].fam));
+    for (const id of ids) el.append(card(graph.nodes[id]));
+    refreshStudios();
+  }
+
+  function card(n) {
+    const def = OPS[n.op], color = famColor(def.fam);
+    const c = h('div', { class: 'card', style: `--c:${color}` });
+    const head = h('h3', {}, def.label, h('span', { class: 'id' }, n.id), h('span', { class: 'sp' }));
+    if (def.studio) head.append(h('button', { title: 'open the drawing studio', onclick: () => openTab(def.studio, n.id) }, 'draw'));
+    if (!def.single) head.append(h('button', { title: 'delete module', onclick: () => { removeNode(graph, n.id); renderRack(); } }, 'x'));
+    c.append(head);
+    if (Object.values(def.outs).includes('shape')) { const pv = h('canvas', { class: 'prev', width: 96, height: 60 }); c.append(pv); previews.push({ id: n.id, c: pv }); }
+    for (const [port, type] of Object.entries(def.ports || {})) {
+      const row = h('div', { class: 'row' }, h('label', {}, port), h('span', {}, type === 'shape' ? 'shape in' : 'palette in'), h('span', {}), srcSelect(n, port, type));
+      c.append(row);
+    }
+    for (const pr of def.params) {
+      if (pr.type === 'num') {
+        const driven = !!n.in[pr.k];
+        const sl = h('input', { type: 'range', min: 0, max: 1000, step: 1 }); sl.value = Math.round(clamp(unmapParam(pr, n.p[pr.k]), 0, 1) * 1000);
+        const val = h('span', { class: 'val' }, fmt(pr, n.p[pr.k]));
+        sl.addEventListener('input', () => { n.p[pr.k] = mapParam(pr, sl.value / 1000); val.textContent = fmt(pr, n.p[pr.k]); });
+        const row = h('div', { class: 'row' + (driven ? ' driven' : '') }, h('label', { title: pr.k }, pr.k), sl, val, srcSelect(n, pr.k, 'num'));
+        c.append(row);
+        if (driven) { const m = h('div', { class: 'meter' }, h('i')); c.append(m); meters.push({ id: n.id, k: pr.k, pr, val, bar: m.firstChild }); }
+      } else if (pr.type === 'enum') {
+        const s = h('select', {}); for (const o of pr.opts) { const op = h('option', { value: o }, o); if (n.p[pr.k] === o) op.selected = true; s.append(op); }
+        s.addEventListener('change', () => { n.p[pr.k] = s.value; });
+        c.append(h('div', { class: 'row' }, h('label', {}, pr.k), s));
+      } else if (pr.type === 'color') {
+        const i = h('input', { type: 'color', value: n.p[pr.k] }); i.addEventListener('input', () => { n.p[pr.k] = i.value; });
+        c.append(h('div', { class: 'row' }, h('label', {}, pr.k), i));
+      }
+    }
+    const outs = Object.entries(def.outs);
+    if (outs.length) c.append(h('div', { class: 'out-note' }, 'outputs: ' + outs.map(([p, t]) => (p === 'out' ? t : p + ' (' + t + ')')).join(', ')));
+    return c;
+  }
+
+  function updateLive() {
+    for (const m of meters) {
+      const r = ctx.resolved[m.id]; if (!r) continue;
+      const v = r[m.k]; m.val.textContent = fmt(m.pr, v); m.bar.style.width = clamp(unmapParam(m.pr, v), 0, 1) * 100 + '%';
+    }
+    for (const p of previews) {
+      const o = ctx.outs[p.id], g = p.c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, 96, 60);
+      if (!o || !o.out) continue;
+      g.strokeStyle = '#9fe'; g.lineWidth = 1; g.beginPath();
+      for (const pa of o.out.paths) { const q = pa.p; g.moveTo(48 + q[0] * 26, 30 + q[1] * 26); for (let i = 2; i < q.length; i += 2) g.lineTo(48 + q[i] * 26, 30 + q[i + 1] * 26); if (pa.closed) g.closePath(); }
+      g.stroke();
+    }
+  }
+
+  // ---------------- tabs / studios ----------------
+  const TABS = [['curve', 'Draw a curve'], ['spec', 'Paint a spectrogram'], ['mask', 'Draw on the 2D spectrum'], ['paint', 'Paint a program']];
+  const tabBar = $('tabs');
+  for (const [k, label] of TABS) tabBar.append(h('button', { 'data-tab': k, onclick: () => openTab(k) }, label));
+  function openTab(k, nodeId) {
+    tab = k;
+    for (const b of tabBar.children) b.classList.toggle('on', b.dataset.tab === k);
+    for (const [kk] of TABS) $('st-' + kk).classList.toggle('show', kk === k);
+    if (nodeId && (k === 'curve' || k === 'spec')) { sel[k] = nodeId; }
+    refreshStudios();
+  }
+  function nodesOf(op) { return Object.values(graph.nodes).filter((n) => n.op === op); }
+  function fillSelect(selEl, op, key) {
+    const list = nodesOf(op); selEl.innerHTML = '';
+    if (!list.find((n) => n.id === sel[key])) sel[key] = list.length ? list[0].id : null;
+    for (const n of list) { const o = h('option', { value: n.id }, n.id); if (n.id === sel[key]) o.selected = true; selEl.append(o); }
+  }
+  function refreshStudios() { fillSelect($('cvSel'), 'curve', 'curve'); fillSelect($('sgSel'), 'spec', 'spec'); }
+  $('cvSel').onchange = (e) => { sel.curve = e.target.value; };
+  $('sgSel').onchange = (e) => { sel.spec = e.target.value; };
+  $('cvAdd').onclick = () => { const n = addNode(graph, 'curve'); sel.curve = n.id; renderRack(); };
+  $('sgAdd').onclick = () => { const n = addNode(graph, 'spec'); sel.spec = n.id; renderRack(); };
+
+  // pointer helper
+  function pos(e, c) { const r = c.getBoundingClientRect(); return [((e.clientX - r.left) * c.width) / r.width, ((e.clientY - r.top) * c.height) / r.height]; }
+  function dragOn(canvas, onDown, onMove, onUp) {
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    canvas.addEventListener('pointerdown', (e) => {
+      canvas.setPointerCapture(e.pointerId); onDown(pos(e, canvas), e);
+      const mv = (ev) => onMove(pos(ev, canvas), ev);
+      const up = (ev) => { canvas.removeEventListener('pointermove', mv); canvas.removeEventListener('pointerup', up); canvas.removeEventListener('pointercancel', up); if (onUp) onUp(ev); };
+      canvas.addEventListener('pointermove', mv); canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+      e.preventDefault();
+    });
+  }
+
+  // ---- curve studio ----
+  const cv = $('cv'), cvg = cv.getContext('2d'), cs = $('cvSpec'), csg = cs.getContext('2d');
+  let cvLast = null;
+  function curveNode() { return sel.curve ? graph.nodes[sel.curve] : null; }
+  function setCurve(n, x, y) {
+    const L = n.curve.length, i = clamp(Math.round((x / cv.width) * (L - 1)), 0, L - 1), v = clamp(1 - y / cv.height, 0, 1);
+    if (cvLast && cvLast.i !== i) { const a = cvLast.i, b = i, s = Math.sign(b - a); for (let k = a; k !== b + s; k += s) n.curve[k] = cvLast.v + ((v - cvLast.v) * (k - a)) / (b - a); } else n.curve[i] = v;
+    cvLast = { i, v };
+  }
+  dragOn(cv, (p) => { const n = curveNode(); if (!n) return; cvLast = null; setCurve(n, p[0], p[1]); }, (p) => { const n = curveNode(); if (n) setCurve(n, p[0], p[1]); }, () => { cvLast = null; });
+  document.querySelectorAll('[data-cv]').forEach((b) => b.addEventListener('click', () => {
+    const n = curveNode(); if (!n) return; const L = n.curve.length, c = n.curve, k = b.dataset.cv;
+    if (k === 'flat') c.fill(0.5); else if (k === 'sine') for (let i = 0; i < L; i++) c[i] = 0.5 + 0.4 * Math.sin((2 * Math.PI * i) / L);
+    else if (k === 'saw') for (let i = 0; i < L; i++) c[i] = 0.1 + (0.8 * i) / L;
+    else if (k === 'walk') { const r = CORE.rng((Math.random() * 1e9) | 0); let x = 0.5; for (let i = 0; i < L; i++) { x = clamp(x + (r() - 0.5) * 0.12, 0.05, 0.95); c[i] = x; } }
+    else if (k === 'smooth') { const o = Float32Array.from(c); for (let i = 0; i < L; i++) c[i] = (o[(i + L - 1) % L] + 2 * o[i] + o[(i + 1) % L]) / 4; }
+  }));
+  function drawCurve() {
+    const n = curveNode(), g = cvg; g.clearRect(0, 0, cv.width, cv.height); g.fillStyle = '#06070a'; g.fillRect(0, 0, cv.width, cv.height);
+    g.strokeStyle = '#1d2230'; g.lineWidth = 1; for (let i = 1; i < 4; i++) { g.beginPath(); g.moveTo(0, (cv.height * i) / 4); g.lineTo(cv.width, (cv.height * i) / 4); g.stroke(); }
+    g.fillStyle = '#8d93a5'; g.font = '11px sans-serif'; g.fillText('1', 4, 12); g.fillText('0', 4, cv.height - 4);
+    if (!n) { g.fillText('No curve module yet. Press "+ Add curve module".', 20, 100); csg.clearRect(0, 0, cs.width, cs.height); return; }
+    g.strokeStyle = famColor('source'); g.lineWidth = 2; g.beginPath();
+    const L = n.curve.length; for (let i = 0; i < L; i++) { const x = (i / (L - 1)) * cv.width, y = (1 - n.curve[i]) * cv.height; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
+    const ph = n.s.ph || 0; g.strokeStyle = '#fff6'; g.beginPath(); g.moveTo(ph * cv.width, 0); g.lineTo(ph * cv.width, cv.height); g.stroke();
+    // spectrum of the drawn curve
+    const re = new Float64Array(L), im = new Float64Array(L), w = DSP.hann(L); let mean = 0; for (let i = 0; i < L; i++) mean += n.curve[i]; mean /= L;
+    for (let i = 0; i < L; i++) re[i] = (n.curve[i] - mean) * w[i]; DSP.fft(re, im, false);
+    csg.fillStyle = '#06070a'; csg.fillRect(0, 0, cs.width, cs.height); const bins = 64, bw = cs.width / bins;
+    for (let k = 1; k <= bins; k++) { const m = Math.hypot(re[k], im[k]) / L * 8, hgt = clamp(Math.log10(1 + m * 400) / 2.6, 0, 1) * (cs.height - 16); csg.fillStyle = famColor('source'); csg.fillRect((k - 1) * bw + 1, cs.height - 14 - hgt, bw - 2, hgt); }
+    csg.fillStyle = '#8d93a5'; csg.font = '11px sans-serif'; csg.fillText('spectrum of the drawn curve: bin k = k cycles per loop (1 to 64)', 6, cs.height - 2);
+  }
+
+  // ---- spectrogram studio ----
+  const sg = $('sg'), sgg = sg.getContext('2d'), sgSmall = document.createElement('canvas'); sgSmall.width = SPEC.W; sgSmall.height = SPEC.H;
+  const sgs = sgSmall.getContext('2d'), sgImg = sgs.createImageData(SPEC.W, SPEC.H);
+  const SC = sg.width / SPEC.W;
+  function specNode() { return sel.spec ? graph.nodes[sel.spec] : null; }
+  let sgLast = null;
+  function paintSpec(n, x, y, erase) {
+    const R = +$('sgR').value, V = +$('sgV').value, cx = x / SC, cy = y / SC;
+    const stamp = (px, py) => { for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) { const xx = Math.round(px + dx), yy = Math.round(py + dy); if (xx < 0 || yy < 0 || xx >= SPEC.W || yy >= SPEC.H) continue; const d = Math.hypot(dx, dy); if (d > R + 0.3) continue; const f = 1 - d / (R + 1), i = yy * SPEC.W + xx; n.grid[i] = erase ? Math.round(n.grid[i] * (1 - Math.min(1, f * 2.2))) : Math.max(n.grid[i], Math.round(V * (0.35 + 0.65 * f))); } };
+    if (sgLast) { const dist = Math.hypot(cx - sgLast[0], cy - sgLast[1]), steps = Math.max(1, Math.ceil(dist * 2)); for (let s = 1; s <= steps; s++) stamp(sgLast[0] + ((cx - sgLast[0]) * s) / steps, sgLast[1] + ((cy - sgLast[1]) * s) / steps); } else stamp(cx, cy);
+    sgLast = [cx, cy];
+  }
+  let sgErase = false;
+  dragOn(sg, (p, e) => { const n = specNode(); if (!n) return; sgLast = null; sgErase = e.button === 2 || $('sgErase').checked; paintSpec(n, p[0], p[1], sgErase); }, (p) => { const n = specNode(); if (n) paintSpec(n, p[0], p[1], sgErase); }, () => { sgLast = null; if (audio.playing) restartAudio(); });
+  $('sgClear').onclick = () => { const n = specNode(); if (n) { n.grid.fill(0); if (audio.playing) restartAudio(); } };
+  $('sgUp').onclick = () => { const n = specNode(); if (!n) return; for (let x = 0; x < SPEC.W; x++) { const y = Math.round(SPEC.H - 6 - (x / SPEC.W) * (SPEC.H - 14)); for (let d = -1; d <= 1; d++) { const yy = y + d; if (yy >= 0 && yy < SPEC.H) n.grid[yy * SPEC.W + x] = Math.max(n.grid[yy * SPEC.W + x], 230 - Math.abs(d) * 70); } } if (audio.playing) restartAudio(); };
+  $('sgChord').onclick = () => { const n = specNode(); if (!n) return; for (const hz of [220, 277.2, 329.6, 440]) { const y = Math.round((1 - Math.log(hz / SPEC.fmin) / Math.log(SPEC.fmax / SPEC.fmin)) * (SPEC.H - 1)); for (let x = 20; x < SPEC.W - 20; x++) for (let d = 0; d <= 1; d++) n.grid[(y + d) * SPEC.W + x] = Math.max(n.grid[(y + d) * SPEC.W + x], 150); } if (audio.playing) restartAudio(); };
+  function drawSpec() {
+    const n = specNode(), g = sgg; g.fillStyle = '#06070a'; g.fillRect(0, 0, sg.width, sg.height);
+    if (!n) { g.fillStyle = '#8d93a5'; g.font = '13px sans-serif'; g.fillText('No spectrogram module yet. Press "+ Add spectrogram module".', 20, 100); return; }
+    const d = sgImg.data;
+    for (let i = 0; i < SPEC.W * SPEC.H; i++) { const v = n.grid[i], o = 4 * i; d[o] = Math.min(255, v * 1.6); d[o + 1] = Math.max(0, (v - 90) * 1.7); d[o + 2] = Math.min(255, 30 + v * 0.6 + Math.max(0, v - 200) * 3); d[o + 3] = 255; }
+    sgs.putImageData(sgImg, 0, 0); g.imageSmoothingEnabled = false; g.drawImage(sgSmall, 0, 0, sg.width, sg.height);
+    g.font = '11px sans-serif'; g.fillStyle = '#fff9';
+    for (const hz of [100, 400, 1600, 8000]) { const y = (1 - Math.log(hz / SPEC.fmin) / Math.log(SPEC.fmax / SPEC.fmin)) * (SPEC.H - 1) * SC; g.fillRect(0, y, 8, 1); g.fillText(hz >= 1000 ? hz / 1000 + ' kHz' : hz + ' Hz', 12, clamp(y + 4, 12, sg.height - 3)); }
+    const ph = n.s.ph || 0; g.fillStyle = '#fff8'; g.fillRect(ph * sg.width, 0, 2, sg.height);
+  }
+
+  // audio
+  const audio = { ctx: null, src: null, playing: false, node: null, t0: 0 };
+  function ensureAudio() { if (!audio.ctx) audio.ctx = new (window.AudioContext || window.webkitAudioContext)(); if (audio.ctx.state === 'suspended') audio.ctx.resume(); return audio.ctx; }
+  function startAudio(offsetFrac) {
+    const n = specNode(); if (!n) return; const ac = ensureAudio();
+    const samples = DSP.synthSpectrogram(n.grid), buf = ac.createBuffer(1, samples.length, SPEC.sr); buf.copyToChannel(samples, 0);
+    const src = ac.createBufferSource(); src.buffer = buf; src.loop = true; const gain = ac.createGain(); gain.gain.value = 0.7; src.connect(gain); gain.connect(ac.destination);
+    const off = (offsetFrac || 0) * buf.duration; src.start(0, off); audio.src = src; audio.playing = true; audio.node = n.id; audio.t0 = ac.currentTime - off; audio.dur = buf.duration; $('sgPlay').textContent = 'Stop sound'; $('sgPlay').classList.add('on');
+  }
+  function stopAudio() { if (audio.src) { try { audio.src.stop(); } catch (e) { } audio.src = null; } audio.playing = false; $('sgPlay').textContent = 'Play sound'; $('sgPlay').classList.remove('on'); }
+  function restartAudio() { const ph = audio.ctx ? (((audio.ctx.currentTime - audio.t0) % audio.dur) / audio.dur) : 0; if (audio.src) { try { audio.src.stop(); } catch (e) { } } startAudio(ph); }
+  $('sgPlay').onclick = () => { if (audio.playing) stopAudio(); else startAudio(0); };
+  ctx.specPhase = (n) => (audio.playing && audio.node === n.id && audio.ctx ? ((audio.ctx.currentTime - audio.t0) % audio.dur) / audio.dur : (T / SPEC.dur) % 1);
+
+  // ---- mask studio ----
+  const mk = $('mk'), mkg = mk.getContext('2d'), mkSmall = document.createElement('canvas'); mkSmall.width = mkSmall.height = 256; const mks = mkSmall.getContext('2d'), mkImg = mks.createImageData(256, 256);
+  const maskNode = () => graph.nodes.mask;
+  let mkLast = null;
+  function paintM(p, e) {
+    const n = maskNode(), x = p[0] / 2, y = p[1] / 2, rad = +$('mkR').value, val = +document.querySelector('input[name=mkMode]:checked').value;
+    const v = e && e.altKey ? 1 - val : val;
+    if (mkLast) { const d = Math.hypot(x - mkLast[0], y - mkLast[1]), st = Math.max(1, Math.ceil(d / (rad / 3))); for (let s = 1; s <= st; s++) DSP.paintMask(n.mask, 256, mkLast[0] + ((x - mkLast[0]) * s) / st, mkLast[1] + ((y - mkLast[1]) * s) / st, rad, v, true, 0.7); } else DSP.paintMask(n.mask, 256, x, y, rad, v, true, 0.7);
+    mkLast = [x, y];
+  }
+  dragOn(mk, (p, e) => { mkLast = null; paintM(p, e); }, (p, e) => paintM(p, e), () => { mkLast = null; });
+  document.querySelectorAll('[data-mk]').forEach((b) => b.addEventListener('click', () => {
+    const n = maskNode(), k = b.dataset.mk; if (k === 'all') n.mask.fill(1); else if (k === 'low') n.mask = DSP.maskPreset(256, 'low', 22); else if (k === 'high') n.mask = DSP.maskPreset(256, 'high', 22);
+    else if (k === 'ring') n.mask = DSP.maskPreset(256, 'ring', 18, 48); else if (k === 'wedge0') n.mask = DSP.maskPreset(256, 'wedge', 0, 22); else if (k === 'wedge90') n.mask = DSP.maskPreset(256, 'wedge', 90, 22);
+  }));
+  const bindParam = (id, key, conv) => { $(id).addEventListener('input', () => { maskNode().p[key] = conv ? conv($(id).value) : $(id).value; }); };
+  bindParam('mkOn', 'on'); bindParam('mkLoop', 'inloop'); bindParam('mkMix', 'mix', (v) => v / 100);
+  function syncMaskControls() { const n = maskNode(); if (!n) return; $('mkOn').value = n.p.on; $('mkLoop').value = n.p.inloop; $('mkMix').value = Math.round(n.p.mix * 100); }
+  function drawMask() {
+    const n = maskNode(), g = mkg, d = mkImg.data, sp = maskState.spec;
+    for (let i = 0; i < 65536; i++) { const s = sp ? Math.min(1, sp[i] * 1.15) : 0.1, m = n.mask[i], o = 4 * i, gv = 255 * Math.pow(s, 1.4); d[o] = gv * (0.45 + 0.55 * m) + (1 - m) * 90; d[o + 1] = gv * (0.45 + 0.55 * m); d[o + 2] = gv * (0.45 + 0.55 * m); d[o + 3] = 255; }
+    mks.putImageData(mkImg, 0, 0); g.imageSmoothingEnabled = false; g.drawImage(mkSmall, 0, 0, 512, 512);
+    g.strokeStyle = '#4cc9f066'; g.beginPath(); g.moveTo(256, 0); g.lineTo(256, 512); g.moveTo(0, 256); g.lineTo(512, 256); g.stroke();
+    g.fillStyle = '#fff9'; g.font = '11px sans-serif'; g.fillText('DC (average brightness) = centre', 6, 12); g.fillText('red tint = removed', 6, 26);
+  }
+
+  // ---- paint-a-program studio ----
+  const PW = 20, PH = 12, CELL = 32, pgc = $('pg'), pgg = pgc.getContext('2d'); let cells = new Uint8Array(PW * PH), brush = 1;
+  const sw = $('pgSw');
+  CORE.PAINT.forEach((p, i) => { const b = h('button', { 'data-b': i + 1, onclick: () => { brush = i + 1; markBrush(); } }, h('i', { style: `background:${p.c}` }), p.name); sw.append(b); });
+  function markBrush() { for (const b of sw.children) b.classList.toggle('on', +b.dataset.b === brush); }
+  markBrush();
+  let pgErase = false;
+  const pgPaint = (p) => { const x = Math.floor(p[0] / CELL), y = Math.floor(p[1] / CELL); if (x >= 0 && y >= 0 && x < PW && y < PH) cells[y * PW + x] = pgErase ? 0 : brush; };
+  dragOn(pgc, (p, e) => { pgErase = e.button === 2; pgPaint(p); }, (p) => pgPaint(p));
+  function drawPaint() {
+    const g = pgg; g.fillStyle = '#06070a'; g.fillRect(0, 0, pgc.width, pgc.height);
+    for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) { const v = cells[y * PW + x]; if (v) { g.fillStyle = CORE.PAINT[v - 1].c; g.fillRect(x * CELL, y * CELL, CELL, CELL); } }
+    g.strokeStyle = '#ffffff14'; g.lineWidth = 1; for (let x = 0; x <= PW; x++) { g.beginPath(); g.moveTo(x * CELL + .5, 0); g.lineTo(x * CELL + .5, pgc.height); g.stroke(); } for (let y = 0; y <= PH; y++) { g.beginPath(); g.moveTo(0, y * CELL + .5); g.lineTo(pgc.width, y * CELL + .5); g.stroke(); }
+  }
+  $('pgClear').onclick = () => cells.fill(0);
+  $('pgExample').onclick = () => { cells = CORE.paintFromArt(CORE.PAINT_EXAMPLE, PW, PH); };
+  $('pgCompile').onclick = () => {
+    prevGraphJSON = CORE.serialize(graph);
+    const r = CORE.compilePaint(cells, PW, PH, graph);
+    graph = r.graph; ctx.outs = {}; renderRack();
+    $('report').textContent = `${r.regions} region(s) compiled.\n` + (r.report.length ? r.report.join('\n') : 'No wires made. Regions must touch by an edge.');
+  };
+  $('pgUndo').onclick = () => { if (!prevGraphJSON) { $('report').textContent = 'Nothing to undo.'; return; } graph = CORE.deserialize(prevGraphJSON); prevGraphJSON = null; ctx.outs = {}; renderRack(); $('report').textContent = 'Previous rack restored.'; };
+
+  // ---------------- header buttons ----------------
+  $('bPause').onclick = () => { paused = !paused; $('bPause').textContent = paused ? 'Resume' : 'Pause'; $('bPause').classList.toggle('on', paused); };
+  $('bExport').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([CORE.serialize(graph)], { type: 'application/json' })); a.download = 'scanimate-lab-patch.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
+  $('bImport').onchange = (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { try { graph = CORE.deserialize(String(r.result)); if (!graph.nodes.render) addNode(graph, 'render', 'render'); if (!graph.nodes.mask) addNode(graph, 'mask', 'mask'); ctx.outs = {}; renderRack(); syncMaskControls(); } catch (err) { alert('Could not read that patch: ' + err.message); } }; r.readAsText(f); e.target.value = ''; };
+  $('bReset').onclick = () => { graph = CORE.defaultGraph(); ctx.outs = {}; stopAudio(); renderRack(); syncMaskControls(); };
+
+  // ---------------- main loop ----------------
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (!paused) {
+      T += dt; ctx.t = T; ctx.dt = dt; Tele.step(dt, T);
+      evaluate(graph, ctx); render(); updateLive();
+    }
+    if (tab === 'curve') drawCurve(); else if (tab === 'spec') drawSpec(); else if (tab === 'mask') drawMask(); else drawPaint();
+    requestAnimationFrame(frame);
+  }
+  renderRack(); syncMaskControls(); openTab('curve');
+  requestAnimationFrame(frame);
+
+  // handles for tests and for plugging real telemetry later
+  window.LAB = { get graph() { return graph; }, ctx, CORE, DSP, openTab, renderRack, get cells() { return cells; }, setGraph(g) { graph = g; ctx.outs = {}; renderRack(); }, stats() { return { t: T }; } };
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+{
+ "name": "busy regions drift",
+ "saved": "2026-11-24T09:14:34.058Z",
+ "note": "Merges the screen into regions, then spirals and breathes only the visually busy ones. Sees photographs and video, which the element reader cannot.",
+ "graph": {
+  "v": 1,
+  "nodes": [
+   {
+    "id": "n10vhx",
+    "type": "read.regions",
+    "x": 60,
+    "y": 60,
+    "p": {
+     "tol": 0.1,
+     "min": 4,
+     "max": 50,
+     "cols": 40,
+     "rows": 25,
+     "ax": 0,
+     "ay": 0,
+     "aw": 1,
+     "ah": 1
+    }
+   },
+   {
+    "id": "n11qpp",
+    "type": "pick.range",
+    "x": 340,
+    "y": 60,
+    "p": {
+     "k": "busy",
+     "lo": 0.12,
+     "hi": 1
+    }
+   },
+   {
+    "id": "n127ym",
+    "type": "pick.combine",
+    "x": 620,
+    "y": 60,
+    "p": {
+     "mode": "and"
+    }
+   },
+   {
+    "id": "n130qq",
+    "type": "lay.spiral",
+    "x": 900,
+    "y": 60,
+    "p": {
+     "k": 0.3,
+     "px": 0.5,
+     "py": 0.5,
+     "pull": 0.12,
+     "target": "all"
+    }
+   },
+   {
+    "id": "n14jwx",
+    "type": "lay.scale",
+    "x": 900,
+    "y": 260,
+    "p": {
+     "s": 0.4,
+     "f": 0.3,
+     "base": 1,
+     "axis": "both",
+     "from": "index",
+     "scale": 1,
+     "target": "all"
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "n10vhx",
+    "fo": 0,
+    "to": "n127ym",
+    "ti": 0
+   },
+   {
+    "from": "n11qpp",
+    "fo": 0,
+    "to": "n127ym",
+    "ti": 1
+   },
+   {
+    "from": "n127ym",
+    "fo": 0,
+    "to": "n130qq",
+    "ti": 1
+   },
+   {
+    "from": "n127ym",
+    "fo": 0,
+    "to": "n14jwx",
+    "ti": 1
+   }
+  ]
+ }
+}
