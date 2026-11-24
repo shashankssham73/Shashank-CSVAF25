@@ -11,9 +11,45 @@ treats sound, with the machine's own display as the source.
 processor load, memory pressure, disk and network traffic — rendered as an
 image.
 
-→ **[SETUP.md](SETUP.md)** to run it. macOS only.
+---
+
+## Quick start
+
+**macOS only.** Needs Node 18+ and the Xcode command line tools
+(`xcode-select --install`). No `npm install` — there are no dependencies.
+
+```sh
+git clone -b finalproject-psychedelic-os \
+  https://github.com/shashankssham73/Shashank-CSVAF25.git
+cd Shashank-CSVAF25/finalproject
+
+./build.sh                          # compiles 5 small Swift helpers
+node m0-telemetry/telemetryd.js     # serves on 127.0.0.1:7777, loopback only
+```
+
+Then open **<http://127.0.0.1:7777/m1/psyche.html>** in Safari or any
+Chromium browser.
+
+In the render pane click **`mock desktop`**, pick **`acid bath`** from the
+presets dropdown, and drag the `Constant` wired to the `chain.mix` `Output`
+down to about `0.35`. That is the system working.
+
+**No permissions are needed for that.** `mock desktop` is a synthetic scene.
+The two live-screen sources each need one grant, in System Settings ▸ Privacy
+& Security:
+
+| to use | grant | to |
+|---|---|---|
+| `capture my screen` | Screen & System Audio Recording | your browser |
+| `read my screen` | Accessibility | `m1-desktop/bin/ax-reader` |
+
+If 7777 is taken: `node m0-telemetry/telemetryd.js --port 7788`.
+
+→ **[SETUP.md](SETUP.md)** — the same thing with more detail and troubleshooting.
 → **[14-PSYCHE-TALK.pdf](14-PSYCHE-TALK.pdf)** — 18 slides, ten minutes.
 → **[13-PATCHER-MANUAL.pdf](13-PATCHER-MANUAL.pdf)** — the full reference.
+
+---
 
 ## The model
 
