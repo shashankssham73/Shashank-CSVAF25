@@ -30,6 +30,11 @@ const ARGS = (() => {
   for (let i = 0; i < argv.length; i++) {
     const t = argv[i];
     if (!t.startsWith('--')) continue;
+    // Both forms. `--port=7788` silently did nothing and the daemon then
+    // failed on the default port instead, which reads as "the port flag is
+    // broken" rather than "that spelling is unsupported".
+    const eq = t.indexOf('=');
+    if (eq > 2) { a[t.slice(2, eq)] = t.slice(eq + 1); continue; }
     const k = t.slice(2);
     const next = argv[i + 1];
     if (next === undefined || next.startsWith('--')) a[k] = true;

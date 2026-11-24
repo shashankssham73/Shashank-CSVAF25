@@ -32,6 +32,9 @@ node m0-telemetry/telemetryd.js
 It serves on **127.0.0.1:7777** and `[::1]:7777`, and binds to loopback only —
 nothing is exposed to the network. Leave it running.
 
+If 7777 is taken: `node m0-telemetry/telemetryd.js --port 7788` (then use
+that port in the URLs below).
+
 ## 3. Open the patcher
 
 | what | URL |
