@@ -1,0 +1,22 @@
+Computing Visualizer - Signal Control Workbook
+"Generated from the running code on 2026-11-21. Every value was read out of the source, not remembered."
+WHAT EACH SHEET IS FOR
+"SIGNALS        all 43 channels: where each one lives in the machine, its kind, and what it drives today"
+BUSES          the 13 edges of the machine map and the rule that selects each one
+"ACTS           what ORDINARY WORLD / THE CALL / ORDEAL mean, and the exact threshold behind each"
+"SYNTH          every video-synthesiser knob, its formula, and what it does to the image"
+COMPUTATIONS   what real tasks look like in telemetry and how you would know one finished
+"ARCHITECTURE   how a byte actually moves through your Mac, and which stages are invisible"
+"RULES          every rule of layout, shape and movement, with honest provenance"
+"PARAMETERS     every magic number in the renderer, in one place, with derived figures"
+HOW TO USE IT
+Yellow cells are yours. Write in them and I will change the code to match.
+"Nothing in this workbook is wired to the running visualizer yet - it is a specification, not a control panel."
+"If you want it live, say so and I will have the renderer read these values from an exported JSON."
+THE THREE COLUMNS THAT MATTER MOST
+SIGNALS > KIND            decides which DSP is legal. Running an FFT on an event channel is simply wrong.
+RULES > PROVENANCE        MEASURED / AUTHORED / INVENTED. Decide about every INVENTED row first.
+ARCHITECTURE > VISIBLE    about half the machine produces no unprivileged counter. That is the real constraint.
+THE OPEN PROBLEM
+"macOS has no 'this task is finished' event available without root. The daemon sees rates, never boundaries."
+Everything the visualizer says about a task beginning or ending is inference from a channel decaying to baseline.

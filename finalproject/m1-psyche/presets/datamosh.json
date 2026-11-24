@@ -1,0 +1,281 @@
+{
+ "name": "datamosh",
+ "saved": "2026-11-24T17:24:55.224539Z",
+ "note": "Compression artefacts as an aesthetic: the screen in 48x30 blocks, each thrown sideways by its row, with the raster tearing underneath. Needs \"capture my screen\".",
+ "graph": {
+  "v": 1,
+  "nodes": [
+   {
+    "id": "789_1",
+    "type": "read.grid",
+    "x": 60,
+    "y": 60,
+    "p": {
+     "cols": 48,
+     "rows": 30,
+     "ax": 0,
+     "ay": 0,
+     "aw": 1,
+     "ah": 1
+    }
+   },
+   {
+    "id": "789_2",
+    "type": "lay.move",
+    "x": 400,
+    "y": 60,
+    "p": {
+     "amp": 120,
+     "f": 0.9,
+     "axis": "x",
+     "shape": "square",
+     "from": "y",
+     "scale": 9,
+     "target": "all"
+    }
+   },
+   {
+    "id": "789_3",
+    "type": "lay.move",
+    "x": 400,
+    "y": 240,
+    "p": {
+     "amp": 26,
+     "f": 0.37,
+     "axis": "y",
+     "shape": "tri",
+     "from": "x",
+     "scale": 5,
+     "target": "all"
+    }
+   },
+   {
+    "id": "789_4",
+    "type": "lay.scale",
+    "x": 400,
+    "y": 420,
+    "p": {
+     "s": 0.35,
+     "f": 1.7,
+     "base": 1,
+     "axis": "x",
+     "from": "index",
+     "scale": 7,
+     "target": "all"
+    }
+   },
+   {
+    "id": "789_5",
+    "type": "const",
+    "x": 60,
+    "y": 620,
+    "p": {
+     "v": 0.8
+    }
+   },
+   {
+    "id": "789_6",
+    "type": "out",
+    "x": 320,
+    "y": 620,
+    "p": {
+     "dest": "chain.mix",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "789_7",
+    "type": "const",
+    "x": 60,
+    "y": 710,
+    "p": {
+     "v": 12
+    }
+   },
+   {
+    "id": "789_8",
+    "type": "out",
+    "x": 320,
+    "y": 710,
+    "p": {
+     "dest": "scan.amp",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "789_9",
+    "type": "const",
+    "x": 60,
+    "y": 800,
+    "p": {
+     "v": 0.05
+    }
+   },
+   {
+    "id": "789_10",
+    "type": "out",
+    "x": 320,
+    "y": 800,
+    "p": {
+     "dest": "scan.key",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "789_11",
+    "type": "const",
+    "x": 60,
+    "y": 890,
+    "p": {
+     "v": 0.055
+    }
+   },
+   {
+    "id": "789_12",
+    "type": "out",
+    "x": 320,
+    "y": 890,
+    "p": {
+     "dest": "scan.density",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "789_13",
+    "type": "const",
+    "x": 60,
+    "y": 980,
+    "p": {
+     "v": 0.93
+    }
+   },
+   {
+    "id": "789_14",
+    "type": "out",
+    "x": 320,
+    "y": 980,
+    "p": {
+     "dest": "fb.gain",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "789_15",
+    "type": "lfo",
+    "x": 60,
+    "y": 1080,
+    "p": {
+     "f": 1.9,
+     "shape": "saw",
+     "amp": 1,
+     "off": 0
+    }
+   },
+   {
+    "id": "789_16",
+    "type": "remap",
+    "x": 320,
+    "y": 1080,
+    "p": {
+     "il": -1,
+     "ih": 1,
+     "ol": -0.9,
+     "oh": 0.9,
+     "cl": "on"
+    }
+   },
+   {
+    "id": "789_17",
+    "type": "out",
+    "x": 580,
+    "y": 1080,
+    "p": {
+     "dest": "scan.skew",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "789_18",
+    "type": "col.ramp",
+    "x": 700,
+    "y": 1200,
+    "p": {
+     "c0": "#000000",
+     "p0": 0,
+     "c1": "#00ff6a",
+     "p1": 0.3,
+     "c2": "#ff00a8",
+     "p2": 0.68,
+     "c3": "#ffffff",
+     "p3": 1,
+     "off": 0,
+     "g": 1,
+     "hue": 0,
+     "alpha": 1
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "789_1",
+    "fo": 0,
+    "to": "789_2",
+    "ti": 2
+   },
+   {
+    "from": "789_1",
+    "fo": 0,
+    "to": "789_3",
+    "ti": 2
+   },
+   {
+    "from": "789_1",
+    "fo": 0,
+    "to": "789_4",
+    "ti": 1
+   },
+   {
+    "from": "789_5",
+    "fo": 0,
+    "to": "789_6",
+    "ti": 0
+   },
+   {
+    "from": "789_7",
+    "fo": 0,
+    "to": "789_8",
+    "ti": 0
+   },
+   {
+    "from": "789_9",
+    "fo": 0,
+    "to": "789_10",
+    "ti": 0
+   },
+   {
+    "from": "789_11",
+    "fo": 0,
+    "to": "789_12",
+    "ti": 0
+   },
+   {
+    "from": "789_13",
+    "fo": 0,
+    "to": "789_14",
+    "ti": 0
+   },
+   {
+    "from": "789_15",
+    "fo": 0,
+    "to": "789_16",
+    "ti": 0
+   },
+   {
+    "from": "789_16",
+    "fo": 0,
+    "to": "789_17",
+    "ti": 0
+   }
+  ]
+ }
+}

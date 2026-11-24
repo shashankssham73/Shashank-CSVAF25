@@ -1,0 +1,940 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Patcher Manual</title>
+<style>
+@page { size: A4; margin: 17mm 15mm 16mm; }
+* { box-sizing: border-box; }
+body { font: 10.2pt/1.52 "Helvetica Neue", Helvetica, Arial, sans-serif; color:#15191e; margin:0; }
+code, .mono { font-family: Menlo, ui-monospace, monospace; font-size: 9pt; }
+h1 { font-size: 26pt; margin: 0 0 4pt; letter-spacing:-.4pt; }
+h2 { font-size: 14pt; margin: 20pt 0 6pt; padding-bottom:3pt; border-bottom:1.2pt solid #15191e;
+     page-break-after: avoid; }
+h3 { font-size: 11pt; margin: 13pt 0 4pt; page-break-after: avoid; }
+h3.grp { margin-top: 15pt; }
+p { margin: 0 0 6pt; }
+.lede { color:#55606c; font-size:10.5pt; }
+.cover { page-break-after: always; padding-top: 42mm; }
+.cover .sub { font-size: 13pt; color:#55606c; margin-top:6pt; }
+.cover .meta { margin-top: 26pt; font-size:9.3pt; color:#6b7784; line-height:1.9; }
+.cover .big { margin-top: 30pt; display:flex; gap:26pt; }
+.cover .big div { font-size:9.3pt; color:#55606c; }
+.cover .big b { display:block; font-size:21pt; color:#15191e; font-weight:600; }
+table { width:100%; border-collapse: collapse; margin: 6pt 0 10pt; font-size: 9.3pt; }
+th { text-align:left; border-bottom:1pt solid #15191e; padding:3pt 5pt; font-size:8.6pt;
+     text-transform:uppercase; letter-spacing:.5pt; }
+td { border-bottom:.4pt solid #dde2e8; padding:3pt 5pt; vertical-align:top; }
+td.dg { background:#f2f5f8; font-weight:600; font-size:8.6pt; text-transform:uppercase; letter-spacing:.5pt; }
+td.rng { white-space:nowrap; color:#55606c; font-family:Menlo,monospace; font-size:8.4pt; }
+pre { background:#f4f6f9; border-left:2.5pt solid #c3ccd6; padding:7pt 9pt; margin:6pt 0 9pt;
+      font-family:Menlo,monospace; font-size:8.5pt; line-height:1.45; white-space:pre-wrap;
+      page-break-inside: avoid; }
+.op { page-break-inside: avoid; margin: 0 0 7pt; padding-left: 9pt; border-left: 2pt solid #e4e9ee; }
+.opname { font-weight:600; font-size:10pt; }
+.opname code { color:#7a8694; font-weight:400; margin-left:5pt; }
+.dot { display:inline-block; width:7pt; height:7pt; border-radius:1.5pt; margin-right:5pt; }
+.opdesc { color:#333c46; margin:1pt 0 2pt; }
+.opio, .oppar { font-size:8.6pt; color:#6b7784; font-family:Menlo,monospace; }
+.oppar { margin-top:1pt; }
+.io { text-transform:uppercase; letter-spacing:.5pt; font-size:7.4pt; color:#9aa5b1; }
+.kindtag { font-size:7.6pt; text-transform:uppercase; letter-spacing:.7pt; padding:1.5pt 5pt;
+           border-radius:2pt; vertical-align:2pt; margin-left:5pt; font-weight:600; }
+.kindtag.signal{background:#dcebf7;color:#1c4e73}
+.kindtag.geometry{background:#dff0e4;color:#1f5a33}
+.kindtag.modulator{background:#f6e2ee;color:#71265a}
+.kindtag.sink{background:#fae0da;color:#7d2d1c}
+.kindnote { font-size:8.8pt; color:#6b7784; margin:0 0 6pt; }
+.key { display:inline-block; border:.8pt solid #8b96a2; border-radius:2.5pt; padding:0 4pt;
+       font-family:Menlo,monospace; font-size:8.4pt; background:#fff; }
+.note { background:#fff8e6; border-left:2.5pt solid #d9a441; padding:6pt 9pt; margin:7pt 0;
+        font-size:9.3pt; page-break-inside:avoid; }
+.warn { background:#fdeeea; border-left:2.5pt solid #c4553a; padding:6pt 9pt; margin:7pt 0;
+        font-size:9.3pt; page-break-inside:avoid; }
+.two { column-count:2; column-gap:13pt; }
+.pb { page-break-before: always; }
+</style></head><body>
+
+<div class="cover">
+  <h1>The Patcher</h1>
+  <div class="sub">A manual for the Computing Visualizer and the Psychedelic OS</div>
+  <div class="big">
+    <div><b>99</b>operators</div>
+    <div><b>21</b>groups</div>
+    <div><b>37</b>destinations</div>
+    <div><b>4</b>kinds of block</div>
+  </div>
+  <div class="meta">
+    Generated 2026-11-24 from the running software.<br>
+    The reference section is produced from the operator registry itself, so it
+    cannot drift from what the program actually does.<br><br>
+    <b>Start the daemon:</b> <code>cd m0-telemetry &amp;&amp; node telemetryd.js</code><br>
+    <b>Psychedelic OS:</b> <code>localhost:7777/m1/psyche.html</code><br>
+    <b>Computing Visualizer:</b> <code>localhost:7777/patch.html</code>
+  </div>
+</div>
+
+<h2>1 &nbsp; What this is</h2>
+<p>Two systems that share one engine.</p>
+<p><b>The Computing Visualizer</b> turns your machine's own telemetry into an
+image: 43 measured channels, a Rutt/Etra scan processor, a video feedback
+loop, Gray-Scott chemistry on the GPU.</p>
+<p><b>The Psychedelic OS</b> points the same machinery at a desktop instead of
+a machine map, and adds per-glyph typography, surface layout, and a botanical
+view of your filesystem.</p>
+<p>Each has its own patcher page and its own saved patch, but they share the
+graph engine, the operator registry and the editor. An operator built for one
+is available in the other.</p>
+
+<h2>2 &nbsp; How a patch becomes an image</h2>
+<pre>  telemetry (43 channels, SSE)
+        |
+   YOUR PATCH          numbers are conditioned, analysed, combined
+        |
+        +--&gt; 37 named destinations     scan.amp, fb.gain, rd.mix, chain.mix ...
+        +--&gt; $shapes                   fields to draw
+        +--&gt; $color                    the colouriser
+        +--&gt; $text                     the typography stack
+        +--&gt; $layout                   the surface stack
+        +--&gt; $bot                      the tree's geometry
+        |
+   THE RENDERER        source raster -&gt; scan processor and/or chemistry
+                       -&gt; feedback -&gt; colouriser -&gt; screen</pre>
+<p>That list is the whole contract. Everything a patch can produce is one of
+those six things, and the patcher's top bar shows which of them you are
+currently sending.</p>
+
+<h2>3 &nbsp; The four kinds of block</h2>
+<table>
+<tr><th>Kind</th><th>What it does</th><th>Output port?</th></tr>
+<tr><td><span class="kindtag signal">signal</span></td><td>Makes or shapes a number</td><td>yes</td></tr>
+<tr><td><span class="kindtag geometry">geometry</span></td><td>Makes or transforms a shape (a field)</td><td>yes, <b>square</b> ports</td></tr>
+<tr><td><span class="kindtag modulator">modulator</span></td><td>Describes a behaviour for every letter or window</td><td><b>no</b></td></tr>
+<tr><td><span class="kindtag sink">sink</span></td><td>Hands something to the renderer</td><td><b>no</b></td></tr>
+</table>
+<p><b>The one rule: signals flow left to right and must end at a sink.</b>
+A chain that ends in mid-air does nothing. There are four ways to end: an
+<i>Output</i> node, a <i>Fill</i> or <i>Contour</i>, a <i>colouriser</i>, or
+any typography or layout block.</p>
+<div class="warn"><b>The one surprise.</b> Typography and layout modulators
+apply <b>top to bottom by where their nodes sit on the canvas</b>, like a
+layer stack. Drag a node up or down to change when it runs. A <i>Cascade
+delay</i> only affects the modulators <i>below</i> it.</div>
+<div class="note">Square ports carry shapes, round ports carry numbers. The
+editor refuses a wire between them and tells you why.</div>
+
+<h2>4 &nbsp; Navigating the patcher</h2>
+<table>
+<tr><th>Action</th><th>How</th></tr>
+<tr><td>Pan / zoom</td><td>drag the background &middot; scroll wheel</td></tr>
+<tr><td>Add an operator</td><td>click it in the palette. Hover for what it does</td></tr>
+<tr><td>Find an operator</td><td>type in <b>filter operators</b> &mdash; matches name, group and id. <span class="key">esc</span> clears</td></tr>
+<tr><td>Wire</td><td>drag from a port to a port</td></tr>
+<tr><td>Cut a wire</td><td>click the wire</td></tr>
+<tr><td>Change a number</td><td>type in it, or <b>drag its name left/right</b> to scrub. Hold shift for fine</td></tr>
+<tr><td>Draw a curve</td><td>drag inside the green box. Double-click smooths, shift-double-click resets</td></tr>
+<tr><td>Delete</td><td>select, then <span class="key">delete</span></td></tr>
+<tr><td>See the whole patch</td><td><b>outline</b> &mdash; every chain as text, source to sink. Click a line to jump to it</td></tr>
+<tr><td>Arrange it</td><td><b>tidy</b> &mdash; columns are dependency depth. Rows keep their order, so modulator order is preserved</td></tr>
+<tr><td>Live preview</td><td><b>preview</b> docks a view that follows your edits with no save</td></tr>
+<tr><td>Save / undo</td><td><span class="key">cmd S</span> or <b>save</b> &middot; <b>revert</b> returns to the last saved version</td></tr>
+</table>
+<div class="note"><b>Where an edit shows up.</b> The preview pane, the floating
+panel and any open visualizer tab all follow your edits <i>live, without
+saving</i>. Only the file on disk waits for save. One consequence: a live push
+rebuilds every node, so a 40-second analysis window needs 40 seconds to refill
+after each edit.</div>
+
+<h2>5 &nbsp; Navigating the view</h2>
+<table>
+<tr><th>Key</th><th>Does</th></tr>
+<tr><td><span class="key">I</span></td><td>Force the image chain fully on. Use when no patch is driving <code>chain.mix</code> and nothing seems to happen</td></tr>
+<tr><td><span class="key">B</span></td><td>Bypass every modulator &mdash; the fast A/B against plain text</td></tr>
+<tr><td><span class="key">T</span></td><td>Text on / off</td></tr>
+<tr><td><span class="key">D</span></td><td>Synthetic demo data, when the daemon is not running</td></tr>
+<tr><td><span class="key">space</span></td><td>Pause</td></tr>
+</table>
+<p>In the Computing Visualizer: <span class="key">F</span> feedback,
+<span class="key">S</span> scan processor, <span class="key">G</span> shapes,
+<span class="key">R</span> chemistry, <span class="key">C</span> clear,
+<span class="key">[</span> <span class="key">]</span> feedback gain.</p>
+
+<h3>The floating panel</h3>
+<p><code>./bin/hud-panel --view psyche</code> puts a view above every other
+window, on every Space, surviving other apps going fullscreen.</p>
+<table>
+<tr><td><span class="key">ctrl opt V</span></td><td>Make it interactive (it is click-through by default)</td></tr>
+<tr><td><span class="key">cmd return</span></td><td>Maximise / restore</td></tr>
+<tr><td>arrows</td><td>Move &middot; shift-arrows resize &middot; option-arrows by one pixel</td></tr>
+<tr><td>menu bar &#9673;</td><td>View, Size, Opacity, Reset position, Reload, Quit</td></tr>
+</table>
+<div class="note">If it comes back smaller than you asked for, it is restoring
+a remembered frame. Pass <code>--reset</code>.</div>
+
+<h2>6 &nbsp; The four sources</h2>
+<p>The Psychedelic view can be pointed at four things, and they do not carry
+the same information.</p>
+<table>
+<tr><th></th><th>mock</th><th>tree</th><th>read my screen</th><th>capture</th></tr>
+<tr><td>Image chain (deflection, chemistry, feedback, colour)</td><td>yes</td><td>yes</td><td>yes</td><td>yes</td></tr>
+<tr><td>Shapes (SDF)</td><td>yes</td><td>yes</td><td>yes</td><td>yes</td></tr>
+<tr><td>Layout &amp; orientation</td><td>yes</td><td>yes</td><td>yes</td><td>yes</td></tr>
+<tr><td>Typography (per glyph)</td><td>yes</td><td>yes</td><td>yes</td><td><b>no</b></td></tr>
+<tr><td>Semantic phase sources and targets</td><td>&mdash;</td><td>&mdash;</td><td>yes</td><td><b>no</b></td></tr>
+<tr><td>Botanical</td><td>&mdash;</td><td>yes</td><td>&mdash;</td><td>&mdash;</td></tr>
+</table>
+<div class="warn"><b>Capture is pixels.</b> A captured screen has no glyphs, no
+words, no elements, so the typography operators have nothing to address. For
+letters on your real desktop use <b>read my screen</b>, which goes through the
+Accessibility API and carries structure. The browser can process pixels; only
+native code can process structure.</div>
+
+<h2 class="pb">7 &nbsp; Recipes</h2>
+
+<h3>Make the desktop dissolve as the machine works</h3>
+<pre>cpu.busy_pct -&gt; Scale (x0.01) -&gt; Low pass (0.5 Hz)
+             -&gt; Remap (0.08..0.70 -&gt; 0..0.9) -&gt; Output [chain.mix]</pre>
+<p>At idle the desktop is crisp and usable; under load it goes through the whole
+image chain. That gradient is the micro-dose: the readable desktop is one end
+of a continuous knob, not a separate mode.</p>
+
+<h3>A wave that travels along every word</h3>
+<pre>cpu.busy_pct -&gt; Scale -&gt; Low pass -&gt; Remap (-&gt; 2..16) -&gt; Wave [amplitude]
+Wave: phase from = index, phase scale = 0.6</pre>
+<p><b>Phase from</b> is the one control worth understanding. <code>index</code>
+restarts at every word, so the wave runs along words. <code>word</code> makes
+whole words bob in sequence. <code>line</code> ripples down the page.
+<code>entropy</code> makes dense text move more than repetitive text.</p>
+
+<h3>Draw a filter</h3>
+<pre>disk.tps -&gt; Drawn kernel (FIR) -&gt; Scope</pre>
+<p>Draw in the green box. The drawing is the impulse response: left is now,
+right is the past. Flat is a boxcar average, falling is an exponential
+smoother, a bump at the right edge is an echo. Measured: a flat drawing gives
+179.9 dB between 0.05 Hz and 3 Hz.</p>
+
+<h3>Let memory pressure disturb the page</h3>
+<pre>vm.pageouts_per_s -&gt; Normalise (ref 900) -&gt; Envelope (120 / 3000 ms)
+                  -&gt; Remap (-&gt; 0..0.22) -&gt; Scatter [amount]</pre>
+<p>Pressure, not load. Something going wrong should not look like something
+merely being busy.</p>
+
+<h3>Grow your filesystem</h3>
+<pre>disk.tps -&gt; Normalise -&gt; Low pass -&gt; Remap (-&gt; 0.35..1) -&gt; Growth [amount]
+cpu.busy_pct -&gt; ... -&gt; Fruit / flowers [bloom]</pre>
+<p>Switch the view source to <i>my folders as a tree</i>. Directories are stems,
+subdirectories are branches, files are fruit. Thickness follows the square root
+of the files in a subtree &mdash; da Vinci's rule.</p>
+
+<h2>8 &nbsp; When something looks wrong</h2>
+<table>
+<tr><th>What you see</th><th>Why</th></tr>
+<tr><td>Nothing happens at all</td><td><code>chain.mix</code> is 0. Press <span class="key">I</span>, or wire it</td></tr>
+<tr><td>A flat grey wash</td><td>Was a bug in dense sources; the scan processor now compensates automatically. If it returns, lower <code>scan.density</code></td></tr>
+<tr><td>Infinite nested windows</td><td>Capturing the screen you are showing the result on. Pick a single window in the share dialog</td></tr>
+<tr><td>A block does nothing</td><td>It may not be connected. Check <b>outline</b>: anything you built that is missing from that list is wired to nothing</td></tr>
+<tr><td>An operator with no input seems dead</td><td>Not necessarily &mdash; <code>phase from: none</code> with <code>rate: 0</code> is a constant, not a zero. The outline marks these <i>fixed</i></td></tr>
+<tr><td>An analysis value is stuck at 0</td><td>Long windows need to refill. A 40 s autocorrelation needs 40 s, and every save or live edit restarts it</td></tr>
+<tr><td>Typography does nothing on a capture</td><td>Correct. Pixels have no glyphs. Use <i>read my screen</i></td></tr>
+</table>
+
+<h2 class="pb">9 &nbsp; Destinations</h2>
+<p>The 37 named sinks an <i>Output</i> node can write to.</p>
+<table><tr><th>Destination</th><th>Range</th><th>What it does</th></tr><tr><td class="dg" colspan="3">scan</td></tr><tr><td><code>scan.amp</code></td><td class="rng">0 – 200</td><td>deflection amplitude (px)</td></tr><tr><td><code>scan.persp</code></td><td class="rng">0 – 1</td><td>perspective depth</td></tr><tr><td><code>scan.key</code></td><td class="rng">0 – 1</td><td>colouriser key threshold</td></tr><tr><td><code>scan.skew</code></td><td class="rng">-1 – 1</td><td>raster tear</td></tr><tr><td><code>scan.gainR</code></td><td class="rng">0 – 3</td><td>colouriser drive</td></tr><tr><td><code>scan.rowStep</code></td><td class="rng">1 – 8</td><td>scanline spacing</td></tr><tr><td><code>scan.floor</code></td><td class="rng">0 – 0.3</td><td>black floor</td></tr><tr><td><code>scan.density</code></td><td class="rng">0.004 – 0.5</td><td>source density reference</td></tr><tr><td class="dg" colspan="3">fb</td></tr><tr><td><code>fb.gain</code></td><td class="rng">0.8 – 0.995</td><td>feedback gain</td></tr><tr><td><code>fb.zoom</code></td><td class="rng">0.999 – 1.006</td><td>feedback zoom</td></tr><tr><td><code>fb.rot</code></td><td class="rng">-0.004 – 0.004</td><td>feedback rotation</td></tr><tr><td class="dg" colspan="3">hero</td></tr><tr><td><code>hero.spawnRate</code></td><td class="rng">0 – 5</td><td>hero spawns / s</td></tr><tr><td><code>hero.deathProb</code></td><td class="rng">0 – 1</td><td>hero loss probability</td></tr><tr><td class="dg" colspan="3">particle</td></tr><tr><td><code>particle.speed</code></td><td class="rng">0 – 3</td><td>particle speed multiplier</td></tr><tr><td class="dg" colspan="3">type</td></tr><tr><td><code>type.warp</code></td><td class="rng">0 – 1</td><td>readout displacement</td></tr><tr><td class="dg" colspan="3">chain</td></tr><tr><td><code>chain.mix</code></td><td class="rng">0 – 1</td><td>crisp desktop &lt;-&gt; processed</td></tr><tr><td class="dg" colspan="3">rd</td></tr><tr><td><code>rd.mix</code></td><td class="rng">0 – 1</td><td>scanlines &lt;-&gt; chemistry</td></tr><tr><td><code>rd.feed</code></td><td class="rng">0.005 – 0.09</td><td>Gray-Scott feed rate F</td></tr><tr><td><code>rd.kill</code></td><td class="rng">0.03 – 0.075</td><td>Gray-Scott kill rate k</td></tr><tr><td><code>rd.inject</code></td><td class="rng">0 – 3</td><td>how hard traffic seeds the chemistry</td></tr><tr><td><code>rd.iters</code></td><td class="rng">0 – 40</td><td>simulation steps per frame</td></tr><tr><td><code>rd.decay</code></td><td class="rng">0 – 0.01</td><td>extra starvation, per iteration — use sparingly</td></tr><tr><td><code>rd.gain</code></td><td class="rng">0 – 6</td><td>output brightness</td></tr><tr><td><code>rd.floor</code></td><td class="rng">0 – 0.4</td><td>below this the chemistry is invisible</td></tr><tr><td><code>rd.diffV</code></td><td class="rng">0.1 – 1</td><td>V diffusion (asymmetry drives the pattern)</td></tr><tr><td class="dg" colspan="3">bus</td></tr><tr><td><code>bus.net_in</code></td><td class="rng">0 – 1.6</td><td>net_in emission level</td></tr><tr><td><code>bus.net_out</code></td><td class="rng">0 – 1.6</td><td>net_out emission level</td></tr><tr><td><code>bus.disk_in</code></td><td class="rng">0 – 1.6</td><td>disk_in emission level</td></tr><tr><td><code>bus.disk_out</code></td><td class="rng">0 – 1.6</td><td>disk_out emission level</td></tr><tr><td><code>bus.fault</code></td><td class="rng">0 – 1.6</td><td>fault emission level</td></tr><tr><td><code>bus.cow</code></td><td class="rng">0 – 1.6</td><td>cow emission level</td></tr><tr><td><code>bus.pagein</code></td><td class="rng">0 – 1.6</td><td>pagein emission level</td></tr><tr><td><code>bus.pageout</code></td><td class="rng">0 – 1.6</td><td>pageout emission level</td></tr><tr><td><code>bus.compress</code></td><td class="rng">0 – 1.6</td><td>compress emission level</td></tr><tr><td><code>bus.decomp</code></td><td class="rng">0 – 1.6</td><td>decomp emission level</td></tr><tr><td><code>bus.input</code></td><td class="rng">0 – 1.6</td><td>input emission level</td></tr><tr><td><code>bus.fsev</code></td><td class="rng">0 – 1.6</td><td>fsev emission level</td></tr></table>
+
+<h2 class="pb">10 &nbsp; Operator reference</h2>
+<p class="lede">All 99 operators, generated from the registry.</p>
+<h3 class="grp">Read — how to see the screen <span class="kindtag signal">signal</span></h3><p class="kindnote">Numbers in, numbers out. These have an output port and must end at a sink.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#5aa0b8"></span>Read elements
+        <code>read.elements</code></div>
+      <div class="opdesc">Read the screen as ELEMENTS, through the Accessibility API: role, text, rectangle, hierarchy. Exact and semantic, and blind to anything that is not a control.</div>
+      <div class="opio"><span class="io">in</span> —
+        &nbsp;&nbsp;<span class="io">out</span> selection</div>
+      <div class="oppar"><b>scope</b> focused window / all apps &middot; <b>max elements</b> 20–1200 &middot; <b>area x</b> 0–1 &middot; <b>area y</b> 0–1 &middot; <b>area width</b> 0–1 &middot; <b>area height</b> 0–1</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#5aa0b8"></span>Read grid
+        <code>read.grid</code></div>
+      <div class="opdesc">Read the screen as a GRID of tiles, each measured for brightness, hue, saturation, edge density and busyness. Predictable cost, and the honest form of "pixel by pixel" — a fine grid at a density you can actually work with.</div>
+      <div class="opio"><span class="io">in</span> columns, rows
+        &nbsp;&nbsp;<span class="io">out</span> selection</div>
+      <div class="oppar"><b>columns</b> 1–160 &middot; <b>rows</b> 1–160 &middot; <b>area x</b> 0–1 &middot; <b>area y</b> 0–1 &middot; <b>area width</b> 0–1 &middot; <b>area height</b> 0–1</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#5aa0b8"></span>Read regions
+        <code>read.regions</code></div>
+      <div class="opdesc">Read the screen as REGIONS: measure a fine grid, then merge neighbouring tiles that look alike. Follows the content rather than the markup, so it sees photographs and video that Accessibility cannot.</div>
+      <div class="opio"><span class="io">in</span> tolerance, min size
+        &nbsp;&nbsp;<span class="io">out</span> selection</div>
+      <div class="oppar"><b>tolerance</b> 0.005–0.6 &middot; <b>min tiles</b> 1–200 &middot; <b>max regions</b> 1–400 &middot; <b>detail columns</b> 4–120 &middot; <b>detail rows</b> 4–120 &middot; <b>area x</b> 0–1 &middot; <b>area y</b> 0–1 &middot; <b>area width</b> 0–1 &middot; <b>area height</b> 0–1</div>
+    </div><h3 class="grp">Pick — which elements <span class="kindtag signal">signal</span></h3><p class="kindnote">Numbers in, numbers out. These have an output port and must end at a sink.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#d09a4a"></span>Everything
+        <code>pick.all</code></div>
+      <div class="opdesc">Everything the readers found. The simplest selection there is.</div>
+      <div class="opio"><span class="io">in</span> —
+        &nbsp;&nbsp;<span class="io">out</span> selection</div>
+      
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#d09a4a"></span>This element
+        <code>pick.element</code></div>
+      <div class="opdesc">One specific element, filled in by clicking it in the inspector on the right. Matched on its path through the hierarchy plus its text, because an element has no stable id between snapshots.</div>
+      <div class="opio"><span class="io">in</span> —
+        &nbsp;&nbsp;<span class="io">out</span> selection</div>
+      <div class="oppar"><b>path</b> &middot; <b>text</b></div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#d09a4a"></span>Everything under
+        <code>pick.under</code></div>
+      <div class="opdesc">Everything beneath a point in the hierarchy — this window, this group, this toolbar.</div>
+      <div class="opio"><span class="io">in</span> —
+        &nbsp;&nbsp;<span class="io">out</span> selection</div>
+      <div class="oppar"><b>path</b></div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#d09a4a"></span>By role
+        <code>pick.role</code></div>
+      <div class="opdesc">By raw Accessibility role: AXButton, AXStaticText, AXMenuItem.</div>
+      <div class="opio"><span class="io">in</span> —
+        &nbsp;&nbsp;<span class="io">out</span> selection</div>
+      <div class="oppar"><b>role</b> AXStaticText / AXButton / AXTextField / AXTextArea / AXMenuBarItem / AXMenuItem / AXCell / AXRow / AXImage / AXGroup / AXCheckBox / AXPopUpButton / AXTab / AXLink / AXToolbar / AXWindow / AXOutline / AXList / AXScrollArea</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#d09a4a"></span>By application
+        <code>pick.app</code></div>
+      <div class="opdesc">Everything belonging to one application.</div>
+      <div class="opio"><span class="io">in</span> —
+        &nbsp;&nbsp;<span class="io">out</span> selection</div>
+      <div class="oppar"><b>v</b></div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#d09a4a"></span>By what it is
+        <code>pick.class</code></div>
+      <div class="opdesc">By what the text IS: path, url, number, date, sentence, identifier.</div>
+      <div class="opio"><span class="io">in</span> —
+        &nbsp;&nbsp;<span class="io">out</span> selection</div>
+      <div class="oppar"><b>class</b> sentence / word / identifier / number / path / url / date / time / size / symbol</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#d09a4a"></span>By part of the UI
+        <code>pick.kind</code></div>
+      <div class="opdesc">By part of the interface: menu, title, body, name, label.</div>
+      <div class="opio"><span class="io">in</span> —
+        &nbsp;&nbsp;<span class="io">out</span> selection</div>
+      <div class="oppar"><b>part</b> menu / title / body / name / label</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#d09a4a"></span>By measurement
+        <code>pick.range</code></div>
+      <div class="opdesc">By measurement, between two values. Text measures (entropy, length, depth) and screen measures (brightness, hue, edge density, busyness) both work, so "every long sentence" and "every bright tile" are the same kind of selection.</div>
+      <div class="opio"><span class="io">in</span> from, to
+        &nbsp;&nbsp;<span class="io">out</span> selection</div>
+      <div class="oppar"><b>measure</b> entropy / depth / len / words / digits / caps / ttr / bright / hue / sat / edge / busy / fill / area / tiles &middot; <b>from</b> -1000000–1000000 &middot; <b>to</b> -1000000–1000000</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#d09a4a"></span>Combine
+        <code>pick.combine</code></div>
+      <div class="opdesc">Two selections into one, with and / or. What lets you say "the filenames in Finder but not the sidebar" with no special case anywhere.</div>
+      <div class="opio"><span class="io">in</span> a, b
+        &nbsp;&nbsp;<span class="io">out</span> selection</div>
+      <div class="oppar"><b>mode</b> and / or / a not b</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#d09a4a"></span>Everything except
+        <code>pick.invert</code></div>
+      <div class="opdesc">Everything the input selection does not match.</div>
+      <div class="opio"><span class="io">in</span> selection
+        &nbsp;&nbsp;<span class="io">out</span> selection</div>
+      
+    </div><h3 class="grp">Sources <span class="kindtag signal">signal</span></h3><p class="kindnote">Numbers in, numbers out. These have an output port and must end at a sink.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#4aa3c7"></span>Channel
+        <code>channel</code></div>
+      <div class="opdesc">One of the 43 measured telemetry channels. Everything starts here.</div>
+      <div class="opio"><span class="io">in</span> —
+        &nbsp;&nbsp;<span class="io">out</span> value</div>
+      <div class="oppar"><b>channel</b> cpu.user_pct / cpu.sys_pct / cpu.idle_pct / cpu.busy_pct / load.1m / disk.tps / disk.mb_per_s / disk.kb_per_tx / vm.faults_per_s / vm.cow_per_s / vm.zerofill_per_s / vm.pageins_per_s / vm.pageouts_per_s / vm.compress_per_s / vm.decompress_per_s / vm.free_mb / vm.active_mb / vm.wired_mb / vm.compressor_mb / vm.compressed_logical_mb / net.in_bytes_per_s / net.out_bytes_per_s / net.retx_per_s / net.dupe_per_s / net.ooo_per_s / net.rtt_avg_ms / net.active_procs / pwr.volts / pwr.amps / pwr.watts / pwr.batt_temp_c / pwr.charging / fs.events / in.pressure / in.stage / in.cursor_x / in.cursor_y / in.cursor_speed / in.scroll_dy / in.scroll_dx / in.clicks / in.events / proc.top_cpu_pct</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#4aa3c7"></span>Constant
+        <code>const</code></div>
+      <div class="opdesc">A fixed number. Useful for pinning a destination to one value.</div>
+      <div class="opio"><span class="io">in</span> —
+        &nbsp;&nbsp;<span class="io">out</span> value</div>
+      <div class="oppar"><b>value</b> -1000–1000</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#4aa3c7"></span>Time
+        <code>time</code></div>
+      <div class="opdesc">Seconds since the page loaded. Drives anything that should drift.</div>
+      <div class="opio"><span class="io">in</span> —
+        &nbsp;&nbsp;<span class="io">out</span> seconds</div>
+      
+    </div><h3 class="grp">Math &amp; shaping <span class="kindtag signal">signal</span></h3><p class="kindnote">Numbers in, numbers out. These have an output port and must end at a sink.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#7f8fa0"></span>Scale
+        <code>scale</code></div>
+      <div class="opdesc">Multiply then add. The workhorse for getting a channel into a usable range.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>x</b> -50–50 &middot; <b>+</b> -100–100</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#7f8fa0"></span>Curve
+        <code>curve</code></div>
+      <div class="opdesc">Bend a value: log1p, power, exponential, square root or sigmoid.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>mode</b> log1p / pow / exp / sqrt / sigmoid &middot; <b>amount</b> 0.05–10</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#7f8fa0"></span>Normalise
+        <code>norm</code></div>
+      <div class="opdesc">Map a heavy-tailed channel into 0..1 using log1p against an adapting peak. The most-used conditioning step in the project.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> 0..1, ref</div>
+      <div class="oppar"><b>seed ref</b> 0.001–5000000 &middot; <b>peak decay</b> 0.9–1 &middot; <b>adapt</b> on / off</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#7f8fa0"></span>Clamp
+        <code>clamp</code></div>
+      <div class="opdesc">Hard-limit a value between two bounds.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>min</b> -1000–1000 &middot; <b>max</b> -1000–1000</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#7f8fa0"></span>Remap
+        <code>remap</code></div>
+      <div class="opdesc">Map one range onto another, optionally clamped. The usual last step before an Output.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>in lo</b> -1000000–1000000 &middot; <b>in hi</b> -1000000–1000000 &middot; <b>out lo</b> -1000000–1000000 &middot; <b>out hi</b> -1000000–1000000 &middot; <b>clamp</b> on / off</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#7f8fa0"></span>Abs
+        <code>abs</code></div>
+      <div class="opdesc">Magnitude, discarding sign.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#7f8fa0"></span>Invert
+        <code>invert</code></div>
+      <div class="opdesc">One minus the input. Flips a 0..1 signal.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      
+    </div><h3 class="grp">Combine <span class="kindtag signal">signal</span></h3><p class="kindnote">Numbers in, numbers out. These have an output port and must end at a sink.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#8a7fb0"></span>Math
+        <code>math2</code></div>
+      <div class="opdesc">Two inputs, one of add / subtract / multiply / divide / min / max / power.</div>
+      <div class="opio"><span class="io">in</span> a, b
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>op</b> add / sub / mul / div / min / max / pow</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#8a7fb0"></span>Mix
+        <code>mix</code></div>
+      <div class="opdesc">Crossfade between two inputs by a third.</div>
+      <div class="opio"><span class="io">in</span> a, b, t
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>t (no input)</b> 0–1</div>
+    </div><h3 class="grp">Filters &amp; envelopes <span class="kindtag signal">signal</span></h3><p class="kindnote">Numbers in, numbers out. These have an output port and must end at a sink.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#4f9e86"></span>Low pass
+        <code>lowpass</code></div>
+      <div class="opdesc">One-pole smoothing at a cutoff in Hz. Removes jitter without adding much lag.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>cutoff Hz</b> 0.01–30</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#4f9e86"></span>One euro
+        <code>oneeuro</code></div>
+      <div class="opdesc">The one-euro filter: smooths when still, responds when moving. Better than a low pass for anything you will look at directly.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>min cutoff</b> 0.01–20 &middot; <b>beta</b> 0–2</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#4f9e86"></span>Envelope
+        <code>envelope</code></div>
+      <div class="opdesc">Attack and release follower. Turns a spiky event channel into something that rises fast and falls slowly.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>attack ms</b> 0–5000 &middot; <b>release ms</b> 0–20000</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#4f9e86"></span>Slew limit
+        <code>slew</code></div>
+      <div class="opdesc">Limit how fast a value may change, in units per second.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>max /s</b> 0.001–500</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#4f9e86"></span>Peak hold
+        <code>peakhold</code></div>
+      <div class="opdesc">Hold the maximum, then decay. Makes brief peaks visible.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>decay /s</b> 0–100</div>
+    </div><h3 class="grp">DSP <span class="kindtag signal">signal</span></h3><p class="kindnote">Numbers in, numbers out. These have an output port and must end at a sink.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#c08a3e"></span>Autocorrelation
+        <code>autocorr</code></div>
+      <div class="opdesc">Correlate a signal against itself to find its period. Reports period, strength and a per-minute rate. This is what recovers the rhythm of a repeating task.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> period s, strength, per min</div>
+      <div class="oppar"><b>window s</b> 4–120 &middot; <b>analysis Hz</b> 1–60 &middot; <b>min period s</b> 0.05–30 &middot; <b>max period s</b> 0.2–60</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c08a3e"></span>Spectrum
+        <code>spectrum</code></div>
+      <div class="opdesc">FFT of the signal: spectral centroid, flatness, in-band energy and peak frequency.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> centroid Hz, flatness, band, peak Hz</div>
+      <div class="oppar"><b>window</b> 64 / 128 / 256 / 512 / 1024 &middot; <b>analysis Hz</b> 1–60 &middot; <b>band lo Hz</b> 0–30 &middot; <b>band hi Hz</b> 0.01–30</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c08a3e"></span>Band resynth (iSTFT)
+        <code>bandresynth</code></div>
+      <div class="opdesc">STFT, keep one frequency band, inverse STFT. Latency is about one window, so a slow band arrives late by design.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>window</b> 256 / 512 / 1024 / 2048 &middot; <b>analysis Hz</b> 1–60 &middot; <b>lo Hz</b> 0–30 &middot; <b>hi Hz</b> 0.001–30</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c08a3e"></span>Convolve
+        <code>convolve</code></div>
+      <div class="opdesc">Convolve the signal with a preset kernel (exponential, box, triangle, raised cosine).</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>kernel</b> exp / box / tri / raised &middot; <b>length s</b> 0.05–30 &middot; <b>analysis Hz</b> 1–60 &middot; <b>gain</b> 0–200</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c08a3e"></span>Cross-correlation
+        <code>xcorr</code></div>
+      <div class="opdesc">Cross-correlate two channels to find the lag between them and which one leads.</div>
+      <div class="opio"><span class="io">in</span> a, b
+        &nbsp;&nbsp;<span class="io">out</span> lag s, r, a leads</div>
+      <div class="oppar"><b>window s</b> 4–120 &middot; <b>analysis Hz</b> 1–60 &middot; <b>max lag s</b> 0.2–30</div>
+    </div><h3 class="grp">Drawing as computation <span class="kindtag signal">signal</span></h3><p class="kindnote">Numbers in, numbers out. These have an output port and must end at a sink.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#4f9e86"></span>Drawn transfer
+        <code>draw.transfer</code></div>
+      <div class="opdesc">A curve you draw becomes a lookup table. The drawing IS the transfer function.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>in -&gt; out</b> <i>drawn curve</i> &middot; <b>in lo</b> -1000000–1000000 &middot; <b>in hi</b> -1000000–1000000 &middot; <b>out lo</b> -1000000–1000000 &middot; <b>out hi</b> -1000000–1000000</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#4f9e86"></span>Drawn kernel (FIR)
+        <code>draw.kernel</code></div>
+      <div class="opdesc">A curve you draw becomes an FIR filter kernel. Left is now, right is the past. Drawing a curve is designing a filter.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out, tap sum</div>
+      <div class="oppar"><b>now -&gt; past</b> <i>drawn curve</i> &middot; <b>length s</b> 0.05–60 &middot; <b>analysis Hz</b> 1–60 &middot; <b>taps</b> unity / raw &middot; <b>gain</b> 0–500</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#4f9e86"></span>Drawn spectral mask
+        <code>draw.mask</code></div>
+      <div class="opdesc">A curve you draw becomes a frequency response, applied to the STFT and resynthesised. The software form of an optical Fourier mask.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>0 Hz -&gt; fmax</b> <i>drawn curve</i> &middot; <b>window</b> 256 / 512 / 1024 / 2048 &middot; <b>analysis Hz</b> 1–60 &middot; <b>fmax Hz</b> 0.01–30 &middot; <b>gain</b> 0–100</div>
+    </div><h3 class="grp">Reaction-diffusion <span class="kindtag signal">signal</span></h3><p class="kindnote">Numbers in, numbers out. These have an output port and must end at a sink.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#8a7fb0"></span>RD regime
+        <code>rd.regime</code></div>
+      <div class="opdesc">Blend between two named Gray-Scott regimes, outputting feed and kill rates. The space between two named points is continuous and mostly interesting.</div>
+      <div class="opio"><span class="io">in</span> blend
+        &nbsp;&nbsp;<span class="io">out</span> feed F, kill k</div>
+      <div class="oppar"><b>from</b> coral / mitosis / worms / solitons / waves / uskate &middot; <b>to</b> coral / mitosis / worms / solitons / waves / uskate &middot; <b>blend</b> 0–1</div>
+    </div><h3 class="grp">Logic <span class="kindtag signal">signal</span></h3><p class="kindnote">Numbers in, numbers out. These have an output port and must end at a sink.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#b06a6a"></span>Threshold
+        <code>threshold</code></div>
+      <div class="opdesc">Above a level, output 1; below it minus hysteresis, output 0.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> 0/1</div>
+      <div class="oppar"><b>level</b> -1000000–1000000 &middot; <b>hysteresis</b> 0–1000000</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#b06a6a"></span>Gate
+        <code>gate</code></div>
+      <div class="opdesc">Pass the input only while a second input is above a threshold.</div>
+      <div class="opio"><span class="io">in</span> in, open
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>opens above</b> -1000000–1000000</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#b06a6a"></span>Select
+        <code>select</code></div>
+      <div class="opdesc">Choose between two inputs based on a third.</div>
+      <div class="opio"><span class="io">in</span> a, b, pick
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>b above</b> -1000000–1000000</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#b06a6a"></span>Compare
+        <code>compare</code></div>
+      <div class="opdesc">Compare two inputs, output 0 or 1.</div>
+      <div class="opio"><span class="io">in</span> a, b
+        &nbsp;&nbsp;<span class="io">out</span> 0/1</div>
+      <div class="oppar"><b>test</b> &gt; / &gt;= / &lt; / &lt;=</div>
+    </div><h3 class="grp">Generators <span class="kindtag signal">signal</span></h3><p class="kindnote">Numbers in, numbers out. These have an output port and must end at a sink.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#6f8fb8"></span>LFO
+        <code>lfo</code></div>
+      <div class="opdesc">A free-running oscillator: sine, triangle, saw or square, with a frequency input.</div>
+      <div class="opio"><span class="io">in</span> freq +
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>Hz</b> 0.001–20 &middot; <b>shape</b> sine / tri / saw / square &middot; <b>depth</b> 0–100 &middot; <b>offset</b> -100–100</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#6f8fb8"></span>1/f noise
+        <code>pink</code></div>
+      <div class="opdesc">1/f noise. Drifts like a natural process rather than jittering like white noise.</div>
+      <div class="opio"><span class="io">in</span> —
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>depth</b> 0–100 &middot; <b>offset</b> -100–100 &middot; <b>update Hz</b> 0.5–60</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#6f8fb8"></span>Drawn ramp
+        <code>gen.ramp</code></div>
+      <div class="opdesc">A sweep whose SHAPE you draw, restartable by a trigger. The analogue motion generator, with the motion drawn by hand.</div>
+      <div class="opio"><span class="io">in</span> trigger, period
+        &nbsp;&nbsp;<span class="io">out</span> out, phase</div>
+      <div class="oppar"><b>shape over time</b> <i>drawn curve</i> &middot; <b>period s</b> 0.02–600 &middot; <b>mode</b> loop / once &middot; <b>depth</b> -100–100 &middot; <b>offset</b> -100–100</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#6f8fb8"></span>Sample &amp; hold
+        <code>gen.sh</code></div>
+      <div class="opdesc">Sample and hold: freeze a value on a rising edge and keep it. Turns a continuous channel into a decision.</div>
+      <div class="opio"><span class="io">in</span> in, trigger
+        &nbsp;&nbsp;<span class="io">out</span> out, age s</div>
+      <div class="oppar"><b>triggers above</b> -1000000–1000000 &middot; <b>initial</b> -1000000–1000000</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#6f8fb8"></span>Step sequencer
+        <code>gen.seq</code></div>
+      <div class="opdesc">Eight-step sequencer, externally clocked or free-running, with optional glide. The one operator here that imposes a rhythm the machine does not have.</div>
+      <div class="opio"><span class="io">in</span> clock
+        &nbsp;&nbsp;<span class="io">out</span> out, step</div>
+      <div class="oppar"><b>1</b> -10–10 &middot; <b>2</b> -10–10 &middot; <b>3</b> -10–10 &middot; <b>4</b> -10–10 &middot; <b>5</b> -10–10 &middot; <b>6</b> -10–10 &middot; <b>7</b> -10–10 &middot; <b>8</b> -10–10 &middot; <b>steps</b> 1–8 &middot; <b>free run Hz</b> 0–20 &middot; <b>glide</b> off / on &middot; <b>glide s</b> 0.001–5</div>
+    </div><h3 class="grp">Shapes (SDF) <span class="kindtag geometry">geometry</span></h3><p class="kindnote">Make or transform a shape — a field, not a number. Square ports.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#5fb08a"></span>Circle
+        <code>sdf.circle</code></div>
+      <div class="opdesc">A circle, as a signed distance field.</div>
+      <div class="opio"><span class="io">in</span> radius
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>centre x</b> -1.2–1.2 &middot; <b>centre y</b> -0.8–0.8 &middot; <b>radius</b> 0.001–1.5</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#5fb08a"></span>Box
+        <code>sdf.box</code></div>
+      <div class="opdesc">A rectangle with roundable corners.</div>
+      <div class="opio"><span class="io">in</span> width, height, corner
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>centre x</b> -1.2–1.2 &middot; <b>centre y</b> -0.8–0.8 &middot; <b>half width</b> 0.001–1.5 &middot; <b>half height</b> 0.001–1.5 &middot; <b>corner</b> 0–0.6</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#5fb08a"></span>N-gon
+        <code>sdf.ngon</code></div>
+      <div class="opdesc">A regular polygon. Radius is the apothem, the distance to an edge midpoint.</div>
+      <div class="opio"><span class="io">in</span> radius, sides, rot
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>centre x</b> -1.2–1.2 &middot; <b>centre y</b> -0.8–0.8 &middot; <b>apothem</b> 0.001–1.5 &middot; <b>sides</b> 3–24 &middot; <b>rot turns</b> -4–4</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#5fb08a"></span>Star
+        <code>sdf.star</code></div>
+      <div class="opdesc">A star. Sharpness 0 collapses it to its polygon, 1 is the spikiest it can be.</div>
+      <div class="opio"><span class="io">in</span> radius, points, sharp, rot
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>centre x</b> -1.2–1.2 &middot; <b>centre y</b> -0.8–0.8 &middot; <b>radius</b> 0.001–1.5 &middot; <b>points</b> 3–24 &middot; <b>sharp</b> 0–1 &middot; <b>rot turns</b> -4–4</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#5fb08a"></span>Ring
+        <code>sdf.ring</code></div>
+      <div class="opdesc">An annulus of a given radius and thickness.</div>
+      <div class="opio"><span class="io">in</span> radius, thick
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>centre x</b> -1.2–1.2 &middot; <b>centre y</b> -0.8–0.8 &middot; <b>radius</b> 0.001–1.5 &middot; <b>thickness</b> 0.001–0.8</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#5fb08a"></span>Segment
+        <code>sdf.seg</code></div>
+      <div class="opdesc">A thick line segment with rounded caps.</div>
+      <div class="opio"><span class="io">in</span> thick
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>x1</b> -1.2–1.2 &middot; <b>y1</b> -0.8–0.8 &middot; <b>x2</b> -1.2–1.2 &middot; <b>y2</b> -0.8–0.8 &middot; <b>thickness</b> 0.001–0.6</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#5fb08a"></span>Arc
+        <code>sdf.arc</code></div>
+      <div class="opdesc">A partial ring, with an aperture and rotation.</div>
+      <div class="opio"><span class="io">in</span> radius, aperture, rot
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>centre x</b> -1.2–1.2 &middot; <b>centre y</b> -0.8–0.8 &middot; <b>radius</b> 0.001–1.5 &middot; <b>thickness</b> 0.001–0.6 &middot; <b>aperture turns</b> 0.001–0.5 &middot; <b>rot turns</b> -4–4</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#5fb08a"></span>Drawn profile
+        <code>sdf.curve</code></div>
+      <div class="opdesc">A curve you draw becomes a radial profile: angle reads along the drawing, height becomes radius. This is where a sketch becomes geometry.</div>
+      <div class="opio"><span class="io">in</span> inner, outer, rot
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>radius by angle</b> <i>drawn curve</i> &middot; <b>centre x</b> -1.2–1.2 &middot; <b>centre y</b> -0.8–0.8 &middot; <b>inner r</b> 0–1.5 &middot; <b>outer r</b> 0–1.5 &middot; <b>rot turns</b> -4–4</div>
+    </div><h3 class="grp">Shape transformers <span class="kindtag geometry">geometry</span></h3><p class="kindnote">Make or transform a shape — a field, not a number. Square ports.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#8f9f5a"></span>Move
+        <code>sh.move</code></div>
+      <div class="opdesc">Translate a shape.</div>
+      <div class="opio"><span class="io">in</span> shape <i>(shape)</i>, dx, dy
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>dx</b> -2–2 &middot; <b>dy</b> -2–2</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#8f9f5a"></span>Rotate
+        <code>sh.rotate</code></div>
+      <div class="opdesc">Rotate a shape about the origin, in turns.</div>
+      <div class="opio"><span class="io">in</span> shape <i>(shape)</i>, turns
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>turns</b> -8–8</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#8f9f5a"></span>Scale
+        <code>sh.scale</code></div>
+      <div class="opdesc">Scale a shape, uniformly or per axis.</div>
+      <div class="opio"><span class="io">in</span> shape <i>(shape)</i>, uniform, x, y
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>uniform</b> 0.01–8 &middot; <b>x</b> 0.01–8 &middot; <b>y</b> 0.01–8</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#8f9f5a"></span>Skew
+        <code>sh.skew</code></div>
+      <div class="opdesc">Shear a shape.</div>
+      <div class="opio"><span class="io">in</span> shape <i>(shape)</i>, kx, ky
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>x by y</b> -2–2 &middot; <b>y by x</b> -2–2</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#8f9f5a"></span>Squeeze
+        <code>sh.squeeze</code></div>
+      <div class="opdesc">Scale that varies along the other axis, so a shape tapers rather than merely shearing. Scanimate’s signature gesture.</div>
+      <div class="opio"><span class="io">in</span> shape <i>(shape)</i>, amount
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>amount</b> -4–4 &middot; <b>varies along</b> y / x &middot; <b>pivot x</b> -1.2–1.2 &middot; <b>pivot y</b> -0.8–0.8</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#8f9f5a"></span>Repeat
+        <code>sh.repeat</code></div>
+      <div class="opdesc">Tile a shape at a pitch, with a limited count.</div>
+      <div class="opio"><span class="io">in</span> shape <i>(shape)</i>, pitch x, pitch y
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>pitch x</b> 0–2 &middot; <b>count x</b> 0–12 &middot; <b>pitch y</b> 0–2 &middot; <b>count y</b> 0–12</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#8f9f5a"></span>Mirror
+        <code>sh.mirror</code></div>
+      <div class="opdesc">Reflect across an axis.</div>
+      <div class="opio"><span class="io">in</span> shape <i>(shape)</i>
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>mirror x</b> on / off &middot; <b>mirror y</b> on / off</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#8f9f5a"></span>Polar array
+        <code>sh.polar</code></div>
+      <div class="opdesc">Repeat a shape around a circle.</div>
+      <div class="opio"><span class="io">in</span> shape <i>(shape)</i>, count, rot
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>count</b> 1–36 &middot; <b>rot turns</b> -4–4</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#8f9f5a"></span>Twist
+        <code>sh.twist</code></div>
+      <div class="opdesc">Rotate by an amount proportional to distance from the centre.</div>
+      <div class="opio"><span class="io">in</span> shape <i>(shape)</i>, amount
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>turns per unit</b> -12–12</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#8f9f5a"></span>Inflate
+        <code>sh.round</code></div>
+      <div class="opdesc">Inflate or deflate the field, rounding every corner at once. Only a distance field can do this; there is no path to edit.</div>
+      <div class="opio"><span class="io">in</span> shape <i>(shape)</i>, amount
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>amount</b> -0.5–0.5</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#8f9f5a"></span>Hollow
+        <code>sh.onion</code></div>
+      <div class="opdesc">Hollow a solid into a shell of a given thickness.</div>
+      <div class="opio"><span class="io">in</span> shape <i>(shape)</i>, thick
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>thickness</b> 0.001–0.5</div>
+    </div><h3 class="grp">Shape combine <span class="kindtag geometry">geometry</span></h3><p class="kindnote">Make or transform a shape — a field, not a number. Square ports.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#b09a5a"></span>Union
+        <code>sh.union</code></div>
+      <div class="opdesc">Both shapes, as one.</div>
+      <div class="opio"><span class="io">in</span> a <i>(shape)</i>, b <i>(shape)</i>
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#b09a5a"></span>Subtract
+        <code>sh.sub</code></div>
+      <div class="opdesc">Cut the second shape out of the first.</div>
+      <div class="opio"><span class="io">in</span> from <i>(shape)</i>, cut <i>(shape)</i>
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#b09a5a"></span>Intersect
+        <code>sh.inter</code></div>
+      <div class="opdesc">Only where both overlap.</div>
+      <div class="opio"><span class="io">in</span> a <i>(shape)</i>, b <i>(shape)</i>
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#b09a5a"></span>Blend
+        <code>sh.blend</code></div>
+      <div class="opdesc">Smooth minimum: the two shapes grow a fillet into each other. Drive the radius and two objects become one and separate again.</div>
+      <div class="opio"><span class="io">in</span> a <i>(shape)</i>, b <i>(shape)</i>, radius
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>radius</b> 0–0.8 &middot; <b>mode</b> union / subtract</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#b09a5a"></span>Morph
+        <code>sh.morph</code></div>
+      <div class="opdesc">Interpolate two fields, so the SHAPES tween through forms that belong to neither. The thing keyframes cannot do.</div>
+      <div class="opio"><span class="io">in</span> a <i>(shape)</i>, b <i>(shape)</i>, t
+        &nbsp;&nbsp;<span class="io">out</span> shape <i>(shape)</i></div>
+      <div class="oppar"><b>t</b> 0–1</div>
+    </div><h3 class="grp">Shape render <span class="kindtag sink">sink</span></h3><p class="kindnote">Ends a chain by handing something to the renderer.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#c7563f"></span>Fill
+        <code>sh.fill</code></div>
+      <div class="opdesc">Draw a shape as a solid. A sink: it ends a chain.</div>
+      <div class="opio"><span class="io">in</span> shape <i>(shape)</i>, brightness, level
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>level</b> -0.5–0.5 &middot; <b>edge softness</b> 0–0.3 &middot; <b>brightness</b> 0–1 &middot; <b>chroma (keys colour)</b> 0–1 &middot; <b>route</b> scanned / raw &middot; <b>blend</b> add / max &middot; <b>field res</b> low / med / high</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c7563f"></span>Contour
+        <code>sh.contour</code></div>
+      <div class="opdesc">Draw concentric outlines sliced from one field. Falls straight out of a distance field and is the most video-synthesiser-looking thing in the set.</div>
+      <div class="opio"><span class="io">in</span> shape <i>(shape)</i>, brightness, spacing
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>first at</b> -0.5–0.5 &middot; <b>line width</b> 0.0005–0.1 &middot; <b>rings</b> 1–24 &middot; <b>spacing</b> 0.002–0.5 &middot; <b>outer fade</b> 0–1 &middot; <b>brightness</b> 0–1 &middot; <b>chroma (keys colour)</b> 0–1 &middot; <b>route</b> scanned / raw &middot; <b>blend</b> add / max &middot; <b>field res</b> low / med / high</div>
+    </div><h3 class="grp">Colourisers <span class="kindtag sink">sink</span></h3><p class="kindnote">Ends a chain by handing something to the renderer.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#a85fa8"></span>Luma keyer
+        <code>col.keyer</code></div>
+      <div class="opdesc">Four hard luminance bands, each with its own colour and alpha, with modulatable edges. What the 1969 colouriser did.</div>
+      <div class="opio"><span class="io">in</span> edge 1, edge 2, edge 3
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>band 0 colour</b> colour &middot; <b>band 0 alpha</b> 0–1 &middot; <b>edge 1</b> 0–1 &middot; <b>band 1 colour</b> colour &middot; <b>band 1 alpha</b> 0–1 &middot; <b>edge 2</b> 0–1 &middot; <b>band 2 colour</b> colour &middot; <b>band 2 alpha</b> 0–1 &middot; <b>edge 3</b> 0–1 &middot; <b>band 3 colour</b> colour &middot; <b>band 3 alpha</b> 0–1 &middot; <b>edge softness</b> 0–0.3</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#a85fa8"></span>Gradient ramp
+        <code>col.ramp</code></div>
+      <div class="opdesc">A smooth four-stop gradient with gamma, offset and hue rotation. One signal can sweep the whole palette.</div>
+      <div class="opio"><span class="io">in</span> offset, gamma, hue turns
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>stop 0</b> colour &middot; <b>at</b> 0–1 &middot; <b>stop 1</b> colour &middot; <b>at</b> 0–1 &middot; <b>stop 2</b> colour &middot; <b>at</b> 0–1 &middot; <b>stop 3</b> colour &middot; <b>at</b> 0–1 &middot; <b>offset</b> -1–1 &middot; <b>gamma</b> 0.1–6 &middot; <b>hue turns</b> -1–1 &middot; <b>alpha scale</b> 0–1</div>
+    </div><h3 class="grp">Typography <span class="kindtag modulator">modulator</span></h3><p class="kindnote">No output port. Adds a behaviour to a stack the renderer walks. Applies top to bottom by node position.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#c77fa8"></span>Wave
+        <code>txt.wave</code></div>
+      <div class="opdesc">The bouncy one. A sinusoid displacing each glyph, with its phase from whichever coordinate you choose.</div>
+      <div class="opio"><span class="io">in</span> amplitude, rate, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>amplitude px</b> -200–200 &middot; <b>rate Hz</b> 0–12 &middot; <b>axis</b> y / x / both &middot; <b>shape</b> sine / tri / square / bounce &middot; <b>phase from</b> index / char / word / line / x / y / rand / entropy / depth / digits / caps / ttr / words / none &middot; <b>phase scale</b> -20–20 &middot; <b>applies to</b> all / title / body / name / menu / label / sentence / word / identifier / number / path / url / date / time / size / symbol</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c77fa8"></span>Jitter
+        <code>txt.jitter</code></div>
+      <div class="opdesc">Per-glyph noise, seeded from the glyph itself so scattered text stays scattered instead of boiling.</div>
+      <div class="opio"><span class="io">in</span> amount, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>amount px</b> 0–200 &middot; <b>rotation deg</b> 0–180 &middot; <b>reseed Hz</b> 0–30 &middot; <b>seed</b> 0–999 &middot; <b>applies to</b> all / title / body / name / menu / label / sentence / word / identifier / number / path / url / date / time / size / symbol</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c77fa8"></span>Rotate glyphs
+        <code>txt.rotate</code></div>
+      <div class="opdesc">Tilt each glyph: alternating, uniform, accumulating, or oscillating.</div>
+      <div class="opio"><span class="io">in</span> degrees, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>degrees</b> -360–360 &middot; <b>spin Hz</b> -8–8 &middot; <b>mode</b> alternate / uniform / ramp / phase &middot; <b>phase from</b> index / char / word / line / x / y / rand / entropy / depth / digits / caps / ttr / words / none &middot; <b>phase scale</b> -20–20 &middot; <b>applies to</b> all / title / body / name / menu / label / sentence / word / identifier / number / path / url / date / time / size / symbol</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c77fa8"></span>Scale glyphs
+        <code>txt.scale</code></div>
+      <div class="opdesc">Resize each glyph, on either axis. A legibility floor in pixels stops it shrinking below readable while leaving it free to grow — clamped against each glyph’s own size, so one setting works for labels and headings alike.</div>
+      <div class="opio"><span class="io">in</span> amount, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>amount</b> -3–8 &middot; <b>pulse Hz</b> 0–12 &middot; <b>base</b> 0.05–6 &middot; <b>axis</b> both / x / y &middot; <b>stay legible above px</b> 0–40 &middot; <b>phase from</b> index / char / word / line / x / y / rand / entropy / depth / digits / caps / ttr / words / none &middot; <b>phase scale</b> -20–20 &middot; <b>applies to</b> all / title / body / name / menu / label / sentence / word / identifier / number / path / url / date / time / size / symbol</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c77fa8"></span>Weight / width / slant
+        <code>txt.axes</code></div>
+      <div class="opdesc">Weight, width and slant. Synthesised rather than true variable-font axes, because Canvas2D cannot set them.</div>
+      <div class="opio"><span class="io">in</span> weight, width, slant, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>weight</b> -1–4 &middot; <b>width</b> -0.6–2 &middot; <b>slant deg</b> -45–45 &middot; <b>modulate Hz</b> 0–12 &middot; <b>phase from</b> index / char / word / line / x / y / rand / entropy / depth / digits / caps / ttr / words / none &middot; <b>phase scale</b> -20–20 &middot; <b>applies to</b> all / title / body / name / menu / label / sentence / word / identifier / number / path / url / date / time / size / symbol</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c77fa8"></span>Tracking / leading
+        <code>txt.spacing</code></div>
+      <div class="opdesc">Letter and line spacing. Read before layout, not after, because spacing changes where glyphs ARE.</div>
+      <div class="opio"><span class="io">in</span> tracking, leading, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>tracking px</b> -20–80 &middot; <b>leading x</b> 0.2–6 &middot; <b>grows along</b> none / index / word / line &middot; <b>applies to</b> all / title / body / name / menu / label / sentence / word / identifier / number / path / url / date / time / size / symbol</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c77fa8"></span>Drawn baseline
+        <code>txt.baseline</code></div>
+      <div class="opdesc">A curve you draw becomes the shape of the line. The letters follow your sketch.</div>
+      <div class="opio"><span class="io">in</span> amount, shift, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>baseline shape</b> <i>drawn curve</i> &middot; <b>amount px</b> -400–400 &middot; <b>shift</b> -2–2 &middot; <b>spans</b> line / screen / word &middot; <b>applies to</b> all / title / body / name / menu / label / sentence / word / identifier / number / path / url / date / time / size / symbol</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c77fa8"></span>Scatter
+        <code>txt.scatter</code></div>
+      <div class="opdesc">Push glyphs away from their word, line, or a point, with optional swirl.</div>
+      <div class="opio"><span class="io">in</span> amount, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>amount</b> 0–4 &middot; <b>away from</b> word / line / screen / point &middot; <b>point x</b> 0–1 &middot; <b>point y</b> 0–1 &middot; <b>swirl deg</b> -360–360 &middot; <b>applies to</b> all / title / body / name / menu / label / sentence / word / identifier / number / path / url / date / time / size / symbol</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c77fa8"></span>Glyph colour
+        <code>txt.colour</code></div>
+      <div class="opdesc">Per-glyph hue and alpha.</div>
+      <div class="opio"><span class="io">in</span> hue turns, alpha, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>base colour</b> colour &middot; <b>hue turns</b> -2–2 &middot; <b>alpha</b> 0–1 &middot; <b>cycle Hz</b> 0–12 &middot; <b>phase from</b> index / char / word / line / x / y / rand / entropy / depth / digits / caps / ttr / words / none &middot; <b>phase scale</b> -20–20 &middot; <b>applies to</b> all / title / body / name / menu / label / sentence / word / identifier / number / path / url / date / time / size / symbol</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#c77fa8"></span>Cascade delay
+        <code>txt.cascade</code></div>
+      <div class="opdesc">Delay everything BELOW it by an amount that depends on the glyph, so an effect arrives along the text instead of happening everywhere at once.</div>
+      <div class="opio"><span class="io">in</span> seconds, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>delay s</b> -2–2 &middot; <b>phase from</b> index / char / word / line / x / y / rand / entropy / depth / digits / caps / ttr / words / none &middot; <b>phase scale</b> -20–20 &middot; <b>applies to</b> all / title / body / name / menu / label / sentence / word / identifier / number / path / url / date / time / size / symbol</div>
+    </div><h3 class="grp">Layout &amp; orientation <span class="kindtag modulator">modulator</span></h3><p class="kindnote">No output port. Adds a behaviour to a stack the renderer walks. Applies top to bottom by node position.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#7fa8c7"></span>Move surfaces
+        <code>lay.move</code></div>
+      <div class="opdesc">Displace whole windows and icons with a wave.</div>
+      <div class="opio"><span class="io">in</span> amount, rate, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>amount px</b> -800–800 &middot; <b>rate Hz</b> 0–8 &middot; <b>axis</b> y / x / both &middot; <b>shape</b> sine / tri / square / bounce &middot; <b>phase from</b> index / x / y / rand / none &middot; <b>phase scale</b> -20–20 &middot; <b>applies to</b> all / window / icon / bar</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#7fa8c7"></span>Rotate surfaces
+        <code>lay.rotate</code></div>
+      <div class="opdesc">Turn each surface about its own centre.</div>
+      <div class="opio"><span class="io">in</span> degrees, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>degrees</b> -360–360 &middot; <b>spin Hz</b> -4–4 &middot; <b>mode</b> phase / uniform / alternate / ramp &middot; <b>phase from</b> index / x / y / rand / none &middot; <b>phase scale</b> -20–20 &middot; <b>applies to</b> all / window / icon / bar</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#7fa8c7"></span>Scale surfaces
+        <code>lay.scale</code></div>
+      <div class="opdesc">Resize each surface about its centre.</div>
+      <div class="opio"><span class="io">in</span> amount, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>amount</b> -2–4 &middot; <b>pulse Hz</b> 0–8 &middot; <b>base</b> 0.05–4 &middot; <b>axis</b> both / x / y &middot; <b>phase from</b> index / x / y / rand / none &middot; <b>phase scale</b> -20–20 &middot; <b>applies to</b> all / window / icon / bar</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#7fa8c7"></span>Tilt / shear
+        <code>lay.tilt</code></div>
+      <div class="opdesc">Shear a surface, which reads as perspective without needing any.</div>
+      <div class="opio"><span class="io">in</span> kx, ky, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>x by y</b> -2–2 &middot; <b>y by x</b> -2–2 &middot; <b>rate Hz</b> 0–8 &middot; <b>phase from</b> index / x / y / rand / none &middot; <b>phase scale</b> -20–20 &middot; <b>applies to</b> all / window / icon / bar</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#7fa8c7"></span>Spiral
+        <code>lay.spiral</code></div>
+      <div class="opdesc">Rotate each surface’s POSITION about a point, proportional to its distance. The desktop winds up.</div>
+      <div class="opio"><span class="io">in</span> amount, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>turns per screen</b> -4–4 &middot; <b>centre x</b> 0–1 &middot; <b>centre y</b> 0–1 &middot; <b>pull inward</b> -1–1 &middot; <b>applies to</b> all / window / icon / bar</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#7fa8c7"></span>Grid to ring
+        <code>lay.ring</code></div>
+      <div class="opdesc">Lerp every surface from where it belongs onto a circle. At 0 nothing, at 1 a dial, real arrangements in between.</div>
+      <div class="opio"><span class="io">in</span> amount, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>amount</b> 0–1 &middot; <b>radius</b> 0–1.2 &middot; <b>start turns</b> -2–2 &middot; <b>centre x</b> 0–1 &middot; <b>centre y</b> 0–1 &middot; <b>applies to</b> all / window / icon / bar</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#7fa8c7"></span>Drift
+        <code>lay.drift</code></div>
+      <div class="opdesc">Seeded per-surface noise. Stable unless given a rate.</div>
+      <div class="opio"><span class="io">in</span> amount, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>amount px</b> 0–600 &middot; <b>rotation deg</b> 0–180 &middot; <b>reseed Hz</b> 0–20 &middot; <b>seed</b> 0–999 &middot; <b>applies to</b> all / window / icon / bar</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#7fa8c7"></span>Gravity
+        <code>lay.gravity</code></div>
+      <div class="opdesc">Collapse the desktop into a pile, or explode it.</div>
+      <div class="opio"><span class="io">in</span> strength, selection
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>strength</b> -2–2 &middot; <b>toward x</b> 0–1 &middot; <b>toward y</b> 0–1 &middot; <b>falloff</b> linear / inverse / constant &middot; <b>applies to</b> all / window / icon / bar</div>
+    </div><h3 class="grp">Botanical <span class="kindtag sink">sink</span></h3><p class="kindnote">Ends a chain by handing something to the renderer.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#6fb08a"></span>Tree shape
+        <code>bot.tree</code></div>
+      <div class="opdesc">The tree’s shape: spread, length, falloff, thickness, upward bias and twist. Thickness goes as the square root of the files in a subtree, which is da Vinci’s rule.</div>
+      <div class="opio"><span class="io">in</span> spread, length, upward, twist
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>spread deg</b> 0–200 &middot; <b>first length</b> 0.02–0.6 &middot; <b>length falloff</b> 0.3–1.2 &middot; <b>thickness</b> 0.1–12 &middot; <b>upward bias</b> -0.5–1 &middot; <b>twist per level</b> -60–60 &middot; <b>max depth</b> 1–8</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#6fb08a"></span>Growth
+        <code>bot.grow</code></div>
+      <div class="opdesc">How much of the tree has grown in. Levels appear in order and the frontier extends partway, so it grows rather than blinks.</div>
+      <div class="opio"><span class="io">in</span> amount
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>amount</b> 0–1 &middot; <b>label depth</b> 0–6</div>
+    </div><div class="op">
+      <div class="opname"><span class="dot" style="background:#6fb08a"></span>Fruit / flowers
+        <code>bot.fruit</code></div>
+      <div class="opdesc">Files as fruit: size, petals, bloom, cluster spread. Petals of three or more turn each berry into a flower.</div>
+      <div class="opio"><span class="io">in</span> size, bloom, petals
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>size</b> 0–20 &middot; <b>petals</b> 0–12 &middot; <b>bloom</b> 0–1.5 &middot; <b>cluster spread</b> 0–120</div>
+    </div><h3 class="grp">Utility <span class="kindtag signal">signal</span></h3><p class="kindnote">Numbers in, numbers out. These have an output port and must end at a sink.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#8c8c8c"></span>Scope
+        <code>scope</code></div>
+      <div class="opdesc">A rolling plot of whatever passes through it. Passes the value on unchanged.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> out</div>
+      <div class="oppar"><b>history s</b> 1–120</div>
+    </div><h3 class="grp">Output <span class="kindtag sink">sink</span></h3><p class="kindnote">Ends a chain by handing something to the renderer.</p><div class="op">
+      <div class="opname"><span class="dot" style="background:#c7563f"></span>Output
+        <code>out</code></div>
+      <div class="opdesc">Write a value to one of the 37 named destinations. The main way a signal reaches the renderer.</div>
+      <div class="opio"><span class="io">in</span> in
+        &nbsp;&nbsp;<span class="io">out</span> none (sink)</div>
+      <div class="oppar"><b>destination</b> scan.amp / scan.persp / scan.key / scan.skew / scan.gainR / scan.rowStep / scan.floor / scan.density / fb.gain / fb.zoom / fb.rot / hero.spawnRate / hero.deathProb / particle.speed / type.warp / chain.mix / rd.mix / rd.feed / rd.kill / rd.inject / rd.iters / rd.decay / rd.gain / rd.floor / rd.diffV / bus.net_in / bus.net_out / bus.disk_in / bus.disk_out / bus.fault / bus.cow / bus.pagein / bus.pageout / bus.compress / bus.decomp / bus.input / bus.fsev &middot; <b>write</b> set / add / multiply</div>
+    </div>
+
+</body></html>

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scanimate Lab</title>
+<style>
+:root{--bg:#0b0c10;--panel:#14161d;--panel2:#1b1e27;--line:#2a2e3b;--text:#e8eaf0;--mute:#8d93a5;--accent:#4cc9f0;
+--source:#f5a524;--shape:#3ddc97;--xform:#4cc9f0;--palette:#c77dff;--render:#ff5d8f}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+header h1{font-size:15px;margin:0 8px 0 0;font-weight:650;letter-spacing:.02em}
+button,select,input[type=file]{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 9px}
+button{cursor:pointer}button:hover{border-color:var(--accent)}
+button.on{background:var(--accent);color:#04121a;border-color:var(--accent)}
+.warn{color:#ffd166;font-size:12px;margin-left:auto;max-width:520px}
+main{display:grid;grid-template-columns:minmax(300px,390px) 1fr;gap:14px;padding:14px 16px}
+#rack{display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 80px);overflow:auto;padding-right:4px}
+.addbar{display:flex;flex-wrap:wrap;gap:6px;position:sticky;top:0;background:var(--bg);padding-bottom:6px;z-index:2}
+.card{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--c,#555);border-radius:8px;padding:7px 9px}
+.card h3{margin:0 0 4px;font-size:12px;display:flex;gap:6px;align-items:center}
+.card h3 .id{color:var(--mute);font-weight:400}
+.card h3 .sp{flex:1}
+.card h3 button{padding:0 6px;font-size:11px}
+.card canvas.prev{background:#000;border-radius:4px;display:block;margin:2px 0 4px;width:96px;height:60px}
+.row{display:grid;grid-template-columns:62px 1fr 52px 96px;gap:5px;align-items:center;margin:2px 0}
+.row label{color:var(--mute);font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.row .val{font-variant-numeric:tabular-nums;font-size:11px;text-align:right}
+.row select{padding:1px 3px;font-size:11px;max-width:96px}
+.row input[type=range]{width:100%}
+.row.driven input[type=range]{opacity:.35;pointer-events:none}
+.meter{height:3px;background:#222;border-radius:2px;grid-column:2;margin-top:-3px}
+.meter i{display:block;height:100%;background:var(--c);width:0;border-radius:2px}
+.out-note{font-size:11px;color:var(--mute);margin-top:3px}
+#stage{min-width:0}
+#outwrap{background:#000;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+#out{display:block;width:100%;max-width:960px;height:auto;margin:0 auto}
+#tabs{display:flex;gap:6px;margin:12px 0 8px;flex-wrap:wrap}
+.studio{display:none;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.studio.show{display:block}
+.studio p.note{color:var(--mute);margin:4px 0 8px;font-size:12px;max-width:760px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.tools label{color:var(--mute);font-size:12px;display:flex;gap:5px;align-items:center}
+canvas.draw{display:block;width:100%;max-width:768px;background:#06070a;border:1px solid var(--line);border-radius:6px;touch-action:none;cursor:crosshair}
+canvas.pix{image-rendering:pixelated}
+.swatches{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.swatches button{display:flex;gap:6px;align-items:center}
+.swatches i{width:14px;height:14px;border-radius:3px;display:inline-block;border:1px solid #0006}
+pre#report{background:#0a0b0f;border:1px solid var(--line);border-radius:6px;padding:8px;margin:8px 0 0;font-size:12px;max-height:200px;overflow:auto;white-space:pre-wrap}
+@media(max-width:900px){main{grid-template-columns:1fr}#rack{max-height:none}.row{grid-template-columns:54px 1fr 48px 90px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Scanimate Lab</h1>
+  <button id="bPause">Pause</button>
+  <button id="bExport">Export patch</button>
+  <label class="fileb">Import <input id="bImport" type="file" accept=".json" style="width:150px"></label>
+  <button id="bReset">Reset to default</button>
+  <span class="warn">Flicker warning: moving, high-contrast, colour-cycling images can trigger discomfort or seizures in some people. Pause if unsure.</span>
+</header>
+<main>
+  <aside id="rack"></aside>
+  <section id="stage">
+    <div id="outwrap"><canvas id="out" width="480" height="300"></canvas></div>
+    <nav id="tabs"></nav>
+
+    <div class="studio" id="st-curve">
+      <p class="note">Draw a line with the mouse. It becomes a signal (0 at the bottom, 1 at the top) that loops over the duration set on the module. Connect it to any parameter in the rack. Below is its spectrum (FFT, mean removed): smooth curves put energy at low frequency, jagged curves spread it up.</p>
+      <div class="tools"><label>Module <select id="cvSel"></select></label><button id="cvAdd">+ Add curve module</button>
+        <button data-cv="flat">Flat</button><button data-cv="sine">Sine</button><button data-cv="saw">Saw</button><button data-cv="walk">Random walk</button><button data-cv="smooth">Smooth</button></div>
+      <canvas class="draw" id="cv" width="768" height="200"></canvas>
+      <canvas class="draw" id="cvSpec" width="768" height="90" style="margin-top:6px;cursor:default"></canvas>
+    </div>
+
+    <div class="studio" id="st-spec">
+      <p class="note">Paint a spectrogram. Left to right is time (about 3 s, looping), bottom to top is frequency (100 Hz to 8 kHz, log scale). Press Play and the picture is turned into sound with an inverse STFT (inverse FFT per column, windowed, overlap-added). The same picture also gives three signals (low, mid, high energy at the playhead) for the rack. Right mouse button or Erase removes. Sound is auto-levelled so it never clips.</p>
+      <div class="tools"><label>Module <select id="sgSel"></select></label><button id="sgAdd">+ Add spectrogram module</button>
+        <button id="sgPlay">Play sound</button><button id="sgClear">Clear</button><button id="sgUp">Rising sweep</button><button id="sgChord">Chord</button>
+        <label>Brush <input type="range" id="sgR" min="1" max="8" value="2"></label><label>Level <input type="range" id="sgV" min="20" max="255" value="200"></label><label><input type="checkbox" id="sgErase"> Erase</label></div>
+      <canvas class="draw" id="sg" width="768" height="288"></canvas>
+    </div>
+
+    <div class="studio" id="st-mask">
+      <p class="note">This is the 2D spectrum (FFT) of the picture above, live. Centre = slow changes, edges = fine detail, angle = direction of stripes. Paint on it: black areas are removed, then an inverse FFT shows the filtered image. The brush is point-symmetric so the result stays a real image. Average brightness is always kept. The filter works on a 256 by 256 copy of the image. Turn Mask on to see it in the main view.</p>
+      <div class="tools"><label>Mask <select id="mkOn"><option value="off">off</option><option value="on">on</option></select></label>
+        <label>In feedback loop <select id="mkLoop"><option value="no">no</option><option value="yes">yes</option></select></label>
+        <label>Mix <input type="range" id="mkMix" min="0" max="100" value="100"></label>
+        <label>Brush <input type="range" id="mkR" min="2" max="40" value="14"></label>
+        <label><input type="radio" name="mkMode" value="0" checked> Remove</label><label><input type="radio" name="mkMode" value="1"> Keep</label></div>
+      <div class="tools"><button data-mk="all">Pass all</button><button data-mk="low">Low-pass</button><button data-mk="high">High-pass</button><button data-mk="ring">Ring</button><button data-mk="wedge0">Wedge 0&deg;</button><button data-mk="wedge90">Wedge 90&deg;</button></div>
+      <canvas class="draw" id="mk" width="512" height="512" style="max-width:512px"></canvas>
+    </div>
+
+    <div class="studio" id="st-paint">
+      <p class="note">Paint a program with colours. Each colour is a block. Touching cells of the same colour make one region (one block). Regions that touch get wired: sources feed shapes and numbers, shapes feed transformers, transformers feed Render (white). A region's size sets one parameter (listed in the report). These are my own simple rules, not the Piet language. Click Compile and the rack is replaced by what you painted (Undo brings the old one back). Left mouse paints, right mouse erases.</p>
+      <div class="swatches" id="pgSw"></div>
+      <div class="tools"><button id="pgCompile">Compile to rack</button><button id="pgUndo">Undo compile</button><button id="pgExample">Load example</button><button id="pgClear">Clear</button></div>
+      <canvas class="draw" id="pg" width="640" height="384" style="max-width:640px"></canvas>
+      <pre id="report">Report appears here after Compile.</pre>
+    </div>
+  </section>
+</main>
+<script>
+/*DSP*/
+</script>
+<script>
+/*CORE*/
+</script>
+<script>
+/*UI*/
+</script>
+</body>
+</html>

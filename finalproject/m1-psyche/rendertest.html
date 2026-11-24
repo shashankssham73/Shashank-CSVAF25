@@ -1,0 +1,248 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Psyche render self test</title>
+<style>body{background:#0b0e12;color:#cfe;font:13px ui-monospace,Menlo,monospace;padding:18px}
+pre{line-height:1.6}.ok{color:#6fbf86}.bad{color:#cf6b5e}canvas{border:1px solid #2c343d;margin:8px 8px 0 0}</style>
+</head><body><pre id="o">running…</pre><div id="c"></div>
+<script>
+// A module that throws posts nothing at all, which looks identical to the
+// daemon being down. Report the crash instead.
+window.__crashed = false;
+function reportCrash(msg, src, line, col) {
+  if (window.__crashed) return; window.__crashed = true;
+  const body = JSON.stringify({ suite:'CRASH', summary:'0/0',
+    tests:[{ name:'page threw before it could run', pass:false,
+             detail:`${msg} (${(src||'').split('/').pop()}:${line}:${col})` }] });
+  try { fetch('/selftest',{method:'POST',headers:{'Content-Type':'application/json'},body}); } catch(e){}
+  const o = document.getElementById('o'); if (o) o.textContent = 'CRASH: ' + msg;
+}
+window.onerror = (m,s,l,c) => reportCrash(m,s,l,c);
+window.addEventListener('unhandledrejection', e =>
+  reportCrash('unhandled rejection: ' + (e.reason && e.reason.message || e.reason), '', 0, 0));
+</script>
+<script type="module">
+import { mockDesktop, layout } from './scene.js';
+import { applyStack, identity } from './modulate.js';
+import { drawChrome, drawGlyphs, drawScene, makeMeasurer, PAL } from './render.js';
+import { applySurfaceStack, surfIdentity } from './modulate.js';
+import { makeCurve } from '../m0-telemetry/patch/opkit.js';
+import { botanicalScene } from './botanical.js';
+
+const out = [], result = { tests: [] };
+const log = s => { out.push(s); document.getElementById('o').innerHTML = out.map(l =>
+  l.startsWith(' ok') ? `<span class="ok">${l}</span>` :
+  l.startsWith('FAIL') ? `<span class="bad">${l}</span>` : l).join('\n'); };
+const T = (name, pass, detail) => { result.tests.push({name,pass,detail});
+  log(`${pass?' ok  ':'FAIL '}${name} — ${detail}`); };
+
+const W = 1440, H = 900;
+const scene = mockDesktop(W, H);
+const mk = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
+
+function render(stack, t, lstack) {
+  const c = mk(), ctx = c.getContext('2d', { willReadFrequently: true });
+  const measure = makeMeasurer(ctx);
+  ctx.fillStyle = PAL.wall; ctx.fillRect(0, 0, W, H);
+  const g = layout(scene.blocks, measure, stack);
+  const xf = identity(), sf = surfIdentity();
+  drawScene(ctx, scene, g,
+            lstack && lstack.length ? s => applySurfaceStack(s, lstack, t, W, H, sf) : null,
+            q => applyStack(q, stack, t, W, H, xf));
+  return { c, ctx, n: g.length };
+}
+const ink = ctx => {               // pixels differing from the wall colour
+  const d = ctx.getImageData(0,0,W,H).data; let n = 0;
+  for (let i = 0; i < d.length; i += 4) if (d[i] > 30 || d[i+1] > 36 || d[i+2] > 44) n++;
+  return n;
+};
+const diff = (a, b) => {
+  const x = a.getImageData(0,0,W,H).data, y = b.getImageData(0,0,W,H).data;
+  let n = 0; for (let i = 0; i < x.length; i += 4)
+    if (Math.abs(x[i]-y[i]) + Math.abs(x[i+1]-y[i+1]) + Math.abs(x[i+2]-y[i+2]) > 24) n++;
+  return n;
+};
+
+// 1. does it draw anything at all
+const plain = render([], 0);
+const inkPlain = ink(plain.ctx);
+T('the desktop renders', inkPlain > 20000, `${inkPlain} lit pixels, ${plain.n} glyphs`);
+
+// 2. text is a real part of it
+const noText = (() => { const c = mk(), x = c.getContext('2d', {willReadFrequently:true});
+  x.fillStyle = PAL.wall; x.fillRect(0,0,W,H); drawChrome(x, scene.chrome, W, H); return x; })();
+const inkChrome = ink(noText);
+T('text is most of the ink', inkPlain - inkChrome > 8000,
+  `chrome ${inkChrome}, chrome+text ${inkPlain}, text contributes ${inkPlain - inkChrome}`);
+
+// 3. THE TEST THAT MATTERS: a modulator must change pixels
+const wave = [{ op:'wave', amp:22, f:0, axis:'y', shape:'sine',
+                from:'index', scale:1, target:'all', _y:0, _x:0 }];
+const waved = render(wave, 0);
+const moved = diff(plain.ctx, waved.ctx);
+T('a wave modulator actually moves pixels', moved > 8000,
+  `${moved} pixels differ from the un-modulated frame`);
+
+// 4. targeting must be visible in the output, not just in the maths
+const onlyNames = [{ ...wave[0], target:'name' }];
+const nOnly = render(onlyNames, 0);
+const dNames = diff(plain.ctx, nOnly.ctx);
+T('targeting a kind touches less of the frame than targeting all',
+  dNames > 300 && dNames < moved * 0.6, `names ${dNames} vs all ${moved}`);
+
+// 5. it must animate
+// t=0 and t=0.5 are BOTH zero crossings of a 1 Hz sine, so they render
+// identically. Quarter of a period apart is the peak.
+const a = render([{ ...wave[0], f:1, from:'none' }], 0.0);
+const b = render([{ ...wave[0], f:1, from:'none' }], 0.25);
+T('a rate makes consecutive frames differ', diff(a.ctx, b.ctx) > 5000,
+  `${diff(a.ctx, b.ctx)} pixels differ between t=0 and t=0.25 (quarter period)`);
+const c3 = render([{ ...wave[0], f:1, from:'none' }], 1.0);
+T('and one full period later it is back where it started',
+  diff(a.ctx, c3.ctx) === 0, `${diff(a.ctx, c3.ctx)} pixels differ at t=0 vs t=1`);
+
+// 6. an empty stack must be byte-identical to bypass
+const again = render([], 0);
+T('an empty stack is deterministic', diff(plain.ctx, again.ctx) === 0,
+  `${diff(plain.ctx, again.ctx)} pixels differ between two identical renders`);
+
+// 7. synthetic weight has to be visible
+const bold = render([{ op:'axes', w:2.5, d:0, sl:0, f:0, from:'none', scale:1,
+                       target:'all', _y:0, _x:0 }], 0);
+T('synthetic weight thickens the type', ink(bold.ctx) > inkPlain * 1.08,
+  `${inkPlain} -> ${ink(bold.ctx)} lit pixels`);
+
+// --- layout & orientation --------------------------------------------------
+{
+  const rotWin = [{ op:'rotate', a:14, f:0, mode:'uniform', from:'index', scale:1, target:'window', _y:0 }];
+  const r = render([], 0, rotWin);
+  const moved = diff(plain.ctx, r.ctx);
+  T('a layout modulator moves pixels', moved > 10000, `${moved} pixels differ`);
+
+  // THE COMPOSITION TEST: a rotated window must carry its text with it, not
+  // leave the glyphs behind at their un-rotated positions.
+  const win1 = scene.surfaces.find(s => s.kind === 'window' && s.w > 580);
+  const inBox = (x, y) => x > win1.x && x < win1.x + win1.w && y > win1.y && y < win1.y + win1.h;
+  const a = plain.ctx.getImageData(0,0,W,H).data, b = r.ctx.getImageData(0,0,W,H).data;
+  let inside = 0;
+  for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) {
+    const i = (y*W+x)*4;
+    if (Math.abs(a[i]-b[i]) + Math.abs(a[i+1]-b[i+1]) + Math.abs(a[i+2]-b[i+2]) > 24 && inBox(x,y)) inside++;
+  }
+  T('a rotated window carries its own text', inside > 1200,
+    `${inside} changed pixels inside the window box — chrome AND glyphs moved`);
+
+  // Targeting is proven exactly in test-text.mjs, against the transforms
+  // themselves. In pixels it can only be a comparison: the folder icons sit
+  // INSIDE window 0, so a rotating window legitimately repaints the area
+  // around them without the icons having moved at all.
+  const ico = scene.surfaces.filter(s => s.kind === 'icon');
+  const inIcon = (x,y) => ico.some(s => x > s.x && x < s.x+s.w && y > s.y && y < s.y+s.h);
+  const countIn = ctx => {
+    const q = ctx.getImageData(0,0,W,H).data; let n = 0;
+    for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) {
+      const i = (y*W+x)*4;
+      if (Math.abs(a[i]-q[i]) + Math.abs(a[i+1]-q[i+1]) + Math.abs(a[i+2]-q[i+2]) > 24 && inIcon(x,y)) n++;
+    }
+    return n;
+  };
+  const rotIco = render([], 0, [{ ...rotWin[0], target:'icon' }]);
+  const byWindow = countIn(r.ctx), byIcon = countIn(rotIco.ctx);
+  T('targeting icons changes icon pixels far more than targeting windows does',
+    byIcon > byWindow * 8, `icons ${byIcon} vs windows ${byWindow} changed pixels in icon regions`);
+}
+{
+  // grid-to-ring must visibly rearrange, and be continuous
+  const ring = a => [{ op:'ring', amt:a, r:0.3, a:0, px:0.5, py:0.5, target:'icon', _y:0 }];
+  const half = render([], 0, ring(0.5)), full = render([], 0, ring(1));
+  T('grid-to-ring rearranges the icons', diff(plain.ctx, full.ctx) > 8000,
+    `${diff(plain.ctx, full.ctx)} pixels differ at amount 1`);
+  T('and it is continuous, not a snap',
+    diff(plain.ctx, half.ctx) > 3000 && diff(half.ctx, full.ctx) > 3000,
+    `0->0.5 ${diff(plain.ctx, half.ctx)}, 0.5->1 ${diff(half.ctx, full.ctx)}`);
+  T('an empty layout stack renders exactly as before', diff(plain.ctx, render([], 0, []).ctx) === 0,
+    `${diff(plain.ctx, render([], 0, []).ctx)} pixels differ`);
+}
+
+// --- botanical ------------------------------------------------------------
+{
+  const r = await fetch('/tree?path=~/Documents&depth=5&max=400');
+  const j = await r.json();
+  T('the daemon serves a directory tree', !j.error && !!j.tree,
+    j.error || `${j.nodes} nodes from ${j.root}`);
+
+  if (j.tree) {
+    const draw = (p) => {
+      const bs = botanicalScene(j.tree, W, H, p);
+      const c = mk(), ctx = c.getContext('2d', { willReadFrequently: true });
+      const measure = makeMeasurer(ctx);
+      ctx.fillStyle = PAL.wall; ctx.fillRect(0, 0, W, H);
+      const g = layout(bs.blocks, measure, []);
+      drawScene(ctx, bs, g, null, q => identity());
+      return { c, ctx, bs, n: g.length };
+    };
+    const full = draw({});
+    T('the tree renders', ink(full.ctx) > 6000,
+      `${ink(full.ctx)} lit pixels — ${full.bs.stats.branches} branches, ${full.bs.stats.fruit} fruit, ${full.n} label glyphs`);
+
+    const bare = draw({ grow: 0 });
+    T('growth 0 draws (almost) nothing', ink(bare.ctx) < ink(full.ctx) * 0.08,
+      `${ink(bare.ctx)} vs ${ink(full.ctx)} lit pixels`);
+    const halfG = draw({ grow: 0.5 });
+    T('growth is visible in between', ink(halfG.ctx) > ink(bare.ctx) && ink(halfG.ctx) < ink(full.ctx),
+      `0 -> ${ink(bare.ctx)}, 0.5 -> ${ink(halfG.ctx)}, 1 -> ${ink(full.ctx)}`);
+
+    T('flowers differ from berries',
+      diff(full.ctx, draw({ fPetals: 0 }).ctx) > 1500,
+      `${diff(full.ctx, draw({ fPetals: 0 }).ctx)} pixels differ with petals off`);
+    T('twist reshapes the tree', diff(full.ctx, draw({ twist: 25 }).ctx) > 4000,
+      `${diff(full.ctx, draw({ twist: 25 }).ctx)} pixels differ`);
+    T('folder names are drawn on it', full.n > 10, `${full.n} label glyphs`);
+
+    const t0 = performance.now();
+    for (let f = 0; f < 30; f++) draw({ grow: 0.5 + 0.5 * Math.sin(f / 10) });
+    T('rebuilding and drawing the tree every frame', (performance.now() - t0) / 30 < 20,
+      ((performance.now() - t0) / 30).toFixed(2) + ' ms/frame including the full rebuild');
+
+    document.getElementById('c').appendChild(full.c);
+    full.c.style.width = '440px';
+  }
+}
+
+// 8. frame cost with a realistic stack
+const stack = [
+  { op:'cascade', d:0.02, from:'char', scale:1, target:'all', _y:0 },
+  { op:'wave', amp:8, f:0.4, axis:'y', shape:'sine', from:'index', scale:0.6, target:'all', _y:1 },
+  { op:'jitter', amt:2, rot:5, rate:0, seed:1, target:'all', _y:2 },
+  { op:'axes', w:0.4, d:0.05, sl:3, f:0.2, from:'word', scale:1, target:'all', _y:3 },
+  { op:'baseline', cv:makeCurve('hump'), amt:12, sh:0, span:'line', target:'name', _y:4 },
+  { op:'colour', base:'#d7e6f0', h:0.08, a:1, f:0.3, from:'char', scale:0.1, target:'all', _y:5 },
+];
+const lstack = [
+  { op:'ring', amt:0.4, r:0.3, a:0, px:0.5, py:0.5, target:'icon', _y:0 },
+  { op:'move', amp:9, f:0.07, axis:'y', shape:'sine', from:'y', scale:6, target:'all', _y:1 },
+  { op:'tilt', kx:0.1, ky:0, f:0, from:'none', scale:1, target:'window', _y:2 },
+  { op:'drift', amt:6, rot:2, rate:0, seed:4, target:'all', _y:3 },
+  { op:'rotate', a:12, f:0.05, mode:'phase', from:'index', scale:1, target:'icon', _y:4 },
+];
+const c2 = mk(), x2 = c2.getContext('2d');
+const m2 = makeMeasurer(x2);
+const xf2 = identity(), sf2 = surfIdentity();
+const t0 = performance.now();
+const N = 60;
+for (let f = 0; f < N; f++) {
+  x2.fillStyle = PAL.wall; x2.fillRect(0,0,W,H);
+  const g = layout(scene.blocks, m2, stack);
+  drawScene(x2, scene, g,
+            s => applySurfaceStack(s, lstack, f/60, W, H, sf2),
+            q => applyStack(q, stack, f/60, W, H, xf2));
+}
+const ms = (performance.now() - t0) / N;
+T('6 typography + 5 layout modulators over the whole desktop, per frame', ms < 18,
+  `${ms.toFixed(2)} ms/frame (${(1000/ms).toFixed(0)} fps headroom)`);
+
+for (const c of [plain.c, waved.c, c2]) { c.style.width = '440px'; document.getElementById('c').appendChild(c); }
+const p = result.tests.filter(t=>t.pass).length;
+result.summary = `${p}/${result.tests.length}`;
+log(`\n${p} passed, ${result.tests.length - p} failed`);
+fetch('/selftest', { method:'POST', headers:{'Content-Type':'application/json'},
+                     body: JSON.stringify({ suite:'psyche-render', ...result }) });
+</script></body></html>

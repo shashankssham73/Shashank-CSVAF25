@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Psychedelic OS</title>
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#0a0d14; overflow:hidden; }
+  canvas { display:block; }
+  /* getDisplayMedia needs a real user gesture, so the source switch has to be
+     something you click. A keypress is not reliably enough for the browser. */
+  #src { position:fixed; left:14px; top:14px; display:flex; gap:7px; z-index:10;
+         font:11.5px ui-monospace, Menlo, monospace; }
+  #src button { background:rgba(16,22,30,0.88); color:#9fc4d6; cursor:pointer;
+                border:1px solid rgba(80,110,140,0.55); border-radius:5px;
+                padding:5px 11px; font:inherit; backdrop-filter:blur(8px); }
+  #src button:hover { border-color:#c77fa8; color:#fff; }
+  #src button.on { border-color:#c77fa8; color:#e7b6d2; background:rgba(50,24,42,0.8); }
+  /* Not a source, so it reads as a different kind of control. */
+  #src #bfloat { margin-left:10px; border-color:rgba(90,200,160,0.6); color:#7fe0b8; }
+  #src #bfloat.on { background:rgba(20,60,45,0.85); border-color:#39d9a4; color:#9affd8; }
+  #src #bfloat:disabled { opacity:0.4; cursor:not-allowed; }
+  #src #bwin { border-color:rgba(130,160,220,0.6); color:#9db8e8; }
+  #src { flex-wrap:wrap; max-width:calc(100% - 28px); }
+  #src .note { color:#5a7788; align-self:center; padding-left:4px; max-width:46ch; }
+  body.compact #src { transform:scale(0.82); transform-origin:0 0; }
+  /* bottom:32px, not 14: the status readout is painted onto the canvas at
+     14px from the bottom and the two were sitting on top of each other. */
+  #diag { position:fixed; left:14px; bottom:32px; z-index:10; max-width:72ch;
+          font:10.5px ui-monospace, Menlo, monospace; color:#7d94a4;
+          background:rgba(10,14,20,0.9); border:1px solid rgba(80,110,140,0.4);
+          border-radius:6px; padding:6px 9px; display:none;
+          backdrop-filter:blur(6px); pointer-events:none; }
+  #diag.on { display:block; }
+  body.compact #diag { font-size:9px; max-width:44ch; bottom:26px; padding:4px 7px; }
+  #diaghead { color:#5a7788; letter-spacing:.12em; text-transform:uppercase;
+              font-size:8.5px; margin-bottom:3px; }
+  #diag .l { white-space:normal; word-break:break-word; line-height:1.45; }
+  #diag .l.bad { color:#ff8d7a; }
+  #diag .l.good { color:#7fe0b8; }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="src">
+  <button id="bmock" class="on">mock desktop</button>
+  <button id="bbot">my folders as a tree</button>
+  <button id="bax">read my screen</button>
+  <button id="blive">capture my screen</button>
+  <button id="bfloat" title="Pop the render into a floating window that stays on top of every app, follows you across Spaces, and keeps rendering while this tab is in the background. Drag its corner to resize it.">float on top</button>
+  <button id="bwin" title="Open the render in a separate, resizable browser window. Not always-on-top, but it runs its own screen capture and does not share this tab's video budget — put it on a second display or another Space.">own window</button>
+  <span class="note" id="snote"></span>
+</div>
+<!-- What just happened, on the page. Asking someone to open devtools to find
+     out why a button did not work is a bug report, not a diagnostic. -->
+<div id="diag"><div id="diaghead">log</div><div id="diaglines"></div></div>
+<script type="module" src="./main.js"></script>
+</body>
+</html>

@@ -146,3 +146,7 @@ out/
 # Temporary files
 tmp/
 temp/
+# built from source by build.sh — see SETUP.md
+finalproject/m0-telemetry/bin/
+finalproject/m1-desktop/bin/
+finalproject/m1-desktop/bin_probe

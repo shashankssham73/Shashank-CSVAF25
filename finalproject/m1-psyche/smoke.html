@@ -1,0 +1,66 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>m1 smoke</title>
+<style>body{background:#0b0e12;color:#cfe;font:13px ui-monospace,Menlo,monospace;padding:18px}
+.ok{color:#6fbf86}.bad{color:#cf6b5e}</style></head><body><pre id="o">…</pre>
+<script>
+// A module that throws posts nothing at all, which looks identical to the
+// daemon being down. Report the crash instead.
+window.__crashed = false;
+function reportCrash(msg, src, line, col) {
+  if (window.__crashed) return; window.__crashed = true;
+  const body = JSON.stringify({ suite:'CRASH', summary:'0/0',
+    tests:[{ name:'page threw before it could run', pass:false,
+             detail:`${msg} (${(src||'').split('/').pop()}:${line}:${col})` }] });
+  try { fetch('/selftest',{method:'POST',headers:{'Content-Type':'application/json'},body}); } catch(e){}
+  const o = document.getElementById('o'); if (o) o.textContent = 'CRASH: ' + msg;
+}
+window.onerror = (m,s,l,c) => reportCrash(m,s,l,c);
+window.addEventListener('unhandledrejection', e =>
+  reportCrash('unhandled rejection: ' + (e.reason && e.reason.message || e.reason), '', 0, 0));
+</script>
+<script type="module">
+// Imports every module the view and patcher load, so a broken import path or
+// a missing export fails here with a readable message instead of a blank page.
+const r = { suite:'m1-smoke', tests:[] };
+const T=(n,p,d)=>r.tests.push({name:n,pass:p,detail:d});
+const MODS = ['./scene.js','./modulate.js','./render.js','./chain.js','./capture.js',
+              './defaults.js','./demos.js',
+              '../m0-telemetry/patch/graph.js','../m0-telemetry/patch/ops.js',
+              '../m0-telemetry/patch/opkit.js','../m0-telemetry/patch/textops.js',
+              // editor.js is deliberately absent: it queries the patcher's DOM at
+              // module scope, so it only loads on a page that has that markup.
+              // psyche.html and patch.html both do; this page does not.
+              '../m0-telemetry/viz/scanproc.js','../m0-telemetry/viz/shapes.js',
+              '../m0-telemetry/viz/rd.js','../m0-telemetry/viz/feedback.js',
+              '../m0-telemetry/viz/colorizer.js','../m0-telemetry/viz/palette.js'];
+for (const m of MODS) {
+  try { await import(m); T('import ' + m, true, ''); }
+  catch (e) { T('import ' + m, false, String(e && e.message || e)); }
+}
+// the pieces the view actually constructs
+try {
+  const { ImageChain } = await import('./chain.js');
+  const { ScreenCapture } = await import('./capture.js');
+  const { defaultPsyche } = await import('./defaults.js');
+  const { mockDesktop, layout, monoMeasure } = await import('./scene.js');
+  const c = new ImageChain();
+  T('ImageChain constructs', !!c.fb && !!c.scan, `rd ${c.rd.ok?'ok':'off: '+c.rd.reason}`);
+  const s = new ScreenCapture();
+  T('ScreenCapture constructs', typeof s.start === 'function',
+    s.supported ? 'getDisplayMedia available' : 'getDisplayMedia MISSING');
+  T('capture is inactive until asked', !s.active && !s.ready, s.label);
+  const g = defaultPsyche();
+  T('default patch builds', g.nodes.size > 0, `${g.nodes.size} nodes`);
+  const G = g.eval({ dt:1/60, t:0, raw:{'cpu.busy_pct':40}, labels:{} });
+  T('default patch evaluates', Array.isArray(G.$text), `${G.$text?G.$text.length:0} modulators`);
+  const d = mockDesktop(1440,900);
+  T('mock desktop lays out', layout(d.blocks, monoMeasure, []).length > 300, '');
+} catch (e) { T('construction', false, String(e && e.message || e)); }
+
+const p = r.tests.filter(t=>t.pass).length;
+r.summary = `${p}/${r.tests.length}`;
+document.getElementById('o').innerHTML = r.tests.map(t =>
+  `<span class="${t.pass?'ok':'bad'}">${t.pass?' ok  ':'FAIL '}${t.name}</span> ${t.detail}`).join('\n')
+  + `\n\n${r.summary}`;
+fetch('/selftest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)});
+</script></body></html>

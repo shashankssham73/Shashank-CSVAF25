@@ -1,0 +1,5 @@
+{
+  "type": "module",
+  "private": true,
+  "_note": "m1-psyche/*.js are ES modules, loaded by the browser and by test-text.mjs."
+}

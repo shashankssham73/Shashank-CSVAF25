@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Computing Visualizer</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #04070d; overflow: hidden; }
+  canvas { display: block; }
+  /* Shown only until the first frame lands, then the canvas covers it. */
+  #boot {
+    position: fixed; inset: 0; display: grid; place-items: center;
+    font: 13px ui-monospace, Menlo, monospace; color: #3f7e95;
+    pointer-events: none; transition: opacity .6s; text-align: center; line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="boot">
+  computing visualizer<br>
+  <span style="color:#24596b">waiting for telemetry on :7777 &nbsp;·&nbsp; press d for synthetic demo data</span>
+</div>
+<script type="module" src="./viz/main.js"></script>
+<script type="module">
+  // Fade the boot notice once anything is actually moving.
+  const boot = document.getElementById('boot');
+  const t = setInterval(() => {
+    const es = document.querySelector('canvas');
+    if (es && es.width) { boot.style.opacity = '0'; clearInterval(t); }
+  }, 400);
+  addEventListener('keydown', () => boot.style.opacity = '0');
+</script>
+</body>
+</html>

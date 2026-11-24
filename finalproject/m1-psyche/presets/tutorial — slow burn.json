@@ -1,0 +1,154 @@
+{
+ "name": "tutorial \u2014 slow burn",
+ "saved": "2026-11-24T18:38:53.643867Z",
+ "note": "The walkthrough preset: 8 blocks, 4 wires. Half the real screen shows through, the deflection breathes over 20 seconds, and a warm ramp colours it. Any source.",
+ "graph": {
+  "v": 1,
+  "nodes": [
+   {
+    "id": "tut1",
+    "type": "const",
+    "x": 60,
+    "y": 60,
+    "p": {
+     "v": 0.55
+    }
+   },
+   {
+    "id": "tut2",
+    "type": "out",
+    "x": 340,
+    "y": 60,
+    "p": {
+     "dest": "chain.mix",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "tut3",
+    "type": "const",
+    "x": 60,
+    "y": 170,
+    "p": {
+     "v": 0.06
+    }
+   },
+   {
+    "id": "tut4",
+    "type": "out",
+    "x": 340,
+    "y": 170,
+    "p": {
+     "dest": "scan.key",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "tut5",
+    "type": "const",
+    "x": 60,
+    "y": 280,
+    "p": {
+     "v": 0.055
+    }
+   },
+   {
+    "id": "tut6",
+    "type": "out",
+    "x": 340,
+    "y": 280,
+    "p": {
+     "dest": "scan.density",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "tut7",
+    "type": "lfo",
+    "x": 60,
+    "y": 400,
+    "p": {
+     "f": 0.05,
+     "shape": "sine",
+     "amp": 1,
+     "off": 0
+    }
+   },
+   {
+    "id": "tut8",
+    "type": "remap",
+    "x": 340,
+    "y": 400,
+    "p": {
+     "il": -1,
+     "ih": 1,
+     "ol": 8,
+     "oh": 70,
+     "cl": "on"
+    }
+   },
+   {
+    "id": "tut9",
+    "type": "out",
+    "x": 620,
+    "y": 400,
+    "p": {
+     "dest": "scan.amp",
+     "mode": "set"
+    }
+   },
+   {
+    "id": "tut10",
+    "type": "col.ramp",
+    "x": 620,
+    "y": 540,
+    "p": {
+     "c0": "#05010f",
+     "p0": 0,
+     "c1": "#1b3fd0",
+     "p1": 0.33,
+     "c2": "#ff6a1f",
+     "p2": 0.7,
+     "c3": "#fff4c8",
+     "p3": 1,
+     "off": 0,
+     "g": 1,
+     "hue": 0,
+     "alpha": 1
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "tut1",
+    "fo": 0,
+    "to": "tut2",
+    "ti": 0
+   },
+   {
+    "from": "tut3",
+    "fo": 0,
+    "to": "tut4",
+    "ti": 0
+   },
+   {
+    "from": "tut5",
+    "fo": 0,
+    "to": "tut6",
+    "ti": 0
+   },
+   {
+    "from": "tut7",
+    "fo": 0,
+    "to": "tut8",
+    "ti": 0
+   },
+   {
+    "from": "tut8",
+    "fo": 0,
+    "to": "tut9",
+    "ti": 0
+   }
+  ]
+ }
+}

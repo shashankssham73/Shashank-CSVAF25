@@ -1,0 +1,5 @@
+{
+  "type": "module",
+  "private": true,
+  "_note": "patch/*.js are ES modules (the browser loads them as such). Node needs this to agree, so patch/test-dsp.mjs can import them. telemetryd.js one level up stays CommonJS and is unaffected."
+}
