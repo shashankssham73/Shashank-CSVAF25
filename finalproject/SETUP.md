@@ -17,7 +17,7 @@ cd finalproject
 ./build.sh
 ```
 
-Five small Swift programs: three that sample machine telemetry, one that
+Six small Swift programs: three that sample machine telemetry, one that
 walks the Accessibility tree, one window probe. They are built rather than
 committed because macOS quarantines downloaded binaries, and Accessibility
 permission is granted **per binary path** — a helper you compiled yourself is
@@ -57,7 +57,22 @@ Two separate grants, both in **System Settings ▸ Privacy & Security**:
 Neither is needed for `mock desktop`, which is a synthetic scene — enough to
 see the whole system working without granting anything.
 
-## 5. First five minutes
+## 5. The whole desktop
+
+```sh
+./psyche.sh              # the effect over everything, click-through
+./psyche.sh --patcher    # …and the patcher, to change it while it runs
+```
+
+Quit from the menu bar icon, or `pkill -f hud-panel`.
+
+The first run prompts for **Screen Recording**. Grant it to whatever launched
+the script — Terminal, usually. The permission goes to the daemon's helper
+rather than the browser, and because ScreenCaptureKit can exclude named
+applications the overlay is left out of its own capture. That is the one
+thing `getDisplayMedia` cannot do, and the reason this path exists.
+
+## 6. First five minutes
 
 1. In the render pane, click **`mock desktop`**
 2. From the presets dropdown choose **`acid bath`**

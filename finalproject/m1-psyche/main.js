@@ -32,7 +32,7 @@ import { axScene } from './semantic.js';
 import { applyStack, identity, applySurfaceStack, surfIdentity } from './modulate.js';
 import { drawChrome, drawGlyphs, drawScene, makeMeasurer, PAL, FONT } from './render.js';
 import { ImageChain } from './chain.js';
-import { ScreenCapture } from './capture.js';
+import { ScreenCapture, NativeFeed } from './capture.js';
 import { TileLayer } from './tilelayer.js';
 import { matches } from '../m0-telemetry/patch/selection.js';
 
@@ -42,7 +42,13 @@ const measure = makeMeasurer(ctx);
 const xform = identity();
 const sform = surfIdentity();
 const chain = new ImageChain();
-const cap = new ScreenCapture();
+// Two ways to get the screen. The browser's own capture, and the native
+// feed, which excludes the window showing the result — the difference
+// between an effect on a copy of your screen and an effect on your screen.
+const cap  = new ScreenCapture();
+const nat  = new NativeFeed();
+// Whichever is running is `src`; everything downstream asks only this.
+const screenSrc = () => (nat.active ? nat : cap);
 const tiles = new TileLayer();
 
 let W = 0, H = 0, DPR = 1, scene = null;
@@ -190,7 +196,13 @@ addEventListener('error', e => diag('ERROR ' + (e.message || e), 'bad'));
 addEventListener('unhandledrejection', e =>
   diag('UNHANDLED ' + ((e.reason && e.reason.message) || e.reason), 'bad'));
 
-const compact = new URLSearchParams(location.search).has('compact');
+const params  = new URLSearchParams(location.search);
+const compact = params.has('compact');
+// Launched inside the full-screen overlay: start the native feed without
+// waiting to be asked. The window is click-through and fills the display, so
+// there is nothing to click.
+const autoNative = params.has('native');
+const coverMode  = params.has('cover');
 if (compact) document.body.classList.add('compact');
 let live = false;                       // true once a capture is running
 let source = 'mock';                    // 'mock' | 'bot' | 'ax' | 'live'
@@ -392,7 +404,7 @@ function tick(now) {
     scene = mockDesktop(BASE_W, BASE_H);        // back from a generated source
   }
 
-  const useLive = live && cap.ready;
+  const useLive = live && screenSrc().ready;
   const drawDesktop = (c, w, h, wall, raw) => {
     c.save();
     c.setTransform(1, 0, 0, 1, 0, 0);
@@ -418,7 +430,7 @@ function tick(now) {
         if (o.sx !== 1 || o.sy !== 1) c.scale(o.sx, o.sy);
         c.translate(-ss.cx, -ss.cy);
       }
-      cap.draw(c, w, h);
+      screenSrc().draw(c, w, h);
       c.restore();
     } else {
       const s = w / BASE_W;
@@ -465,7 +477,7 @@ function tick(now) {
   // Persists until the capture is started again, rather than expiring on a
   // timer: a message that has already vanished by the time you look at a
   // screenshot is no use for working out what happened.
-  const advice = (!useLive && cap.endedAt)
+  const advice = (!useLive && screenSrc().endedAt)
                  ? 'screen sharing ended — click "capture my screen" to resume'
                    + (isFloating() ? ' (it ended while floating — try "own window")' : '')
                : (source === 'bot' && treeErr) ? 'tree: ' + treeErr
@@ -600,7 +612,7 @@ function tick(now) {
   ctx.textAlign = 'left';
   ctx.fillStyle = connected || demoUntil > now ? 'rgba(120,170,200,0.75)' : 'rgba(255,160,42,0.9)';
   const line = demoUntil > now ? 'SYNTHETIC DEMO DATA'
-             : connected ? `${useLive ? 'SCREEN ' + cap.label : 'MOCK'}  ${fps.toFixed(0)}fps`
+             : connected ? `${useLive ? 'SCREEN ' + screenSrc().label : 'MOCK'}  ${fps.toFixed(0)}fps`
                            // A reader is what gives pixels structure, so it is
                            // reported before the source: once one is running,
                            // "pixels carry no structure" is no longer true.
@@ -661,8 +673,14 @@ addEventListener('keydown', e => {
     bm.classList.toggle('on', source === 'mock');
     bb.classList.toggle('on', source === 'bot');
     ba.classList.toggle('on', source === 'ax');
-    bl.classList.toggle('on', live);
-    bl.textContent = live ? 'stop capture' : 'capture my screen';
+    // Two ways to be live; each button reflects only its own.
+    bl.classList.toggle('on', cap.active);
+    bl.textContent = cap.active ? 'stop capture' : 'capture my screen';
+    const bnEl = document.getElementById('bnative');
+    if (bnEl) {
+      bnEl.classList.toggle('on', nat.active);
+      bnEl.textContent = nat.active ? 'stop whole screen' : 'whole screen';
+    }
     if (lastAdvice) { note.textContent = lastAdvice; return; }
     note.textContent = live
       ? (lastWet < 0.01
@@ -678,7 +696,7 @@ addEventListener('keydown', e => {
                      ? `holding ${axApp || 'the last window'} — switch to a window to re-read it`
                      : `reading ${axApp || 'the screen'} — typography and layout both apply`)
                       : 'reading the screen…')
-        : (cap.error && cap.error !== 'capture cancelled' ? cap.error : '');
+        : (screenSrc().error && screenSrc().error !== 'capture cancelled' ? screenSrc().error : '');
   };
   const bf = document.getElementById('bfloat');
   if (bf) {
@@ -743,15 +761,28 @@ addEventListener('keydown', e => {
     try { w.focus(); } catch (_) {}
   };
 
-  cap.onchange = () => { live = cap.active; if (live) source = 'live'; else source = 'mock'; paint(); };
-  bm.onclick = () => { if (live) cap.stop(); live = false; source = 'mock'; paint(); };
+  // Either source going up or down lands here, so `live` and `source` have
+  // one definition rather than one per button.
+  const onSourceChange = () => {
+    live = cap.active || nat.active;
+    source = live ? 'live' : 'mock';
+    paint();
+  };
+  cap.onchange = onSourceChange;
+  nat.onchange = onSourceChange;
+  function stopScreen() {
+    if (cap.active) cap.stop();
+    if (nat.active) nat.stop();
+    live = false;
+  }
+  bm.onclick = () => { stopScreen(); source = 'mock'; paint(); };
   ba.onclick = async () => {
-    if (live) { cap.stop(); live = false; }
+    stopScreen();
     source = 'ax'; paint();
     await loadAx(); paint();
   };
   bb.onclick = async () => {
-    if (live) { cap.stop(); live = false; }
+    stopScreen();
     source = 'bot'; paint();
     if (!tree) { await loadTree(treePath); paint(); }
   };
@@ -771,6 +802,42 @@ addEventListener('keydown', e => {
     paint();
   };
   if (!cap.supported) { bl.disabled = true; bl.title = 'getDisplayMedia unavailable'; }
+
+  // In cover mode the source bar is noise on top of the whole desktop.
+  if (coverMode) {
+    const bar = document.getElementById('src');
+    if (bar) bar.style.display = 'none';
+  }
+
+  // The whole screen, natively. No share dialog and no recursion, because
+  // the capture happens outside the browser and leaves our own window out.
+  const bn = document.getElementById('bnative');
+  if (bn) {
+    if (!nat.supported) {
+      bn.disabled = true;
+      bn.title = 'needs createImageBitmap';
+    }
+    // Cover mode: start it ourselves, once the page is up.
+    if (autoNative && nat.supported) {
+      diag('cover mode — starting the whole-screen feed');
+      nat.start({ exclude: 'hud-panel' }).then(ok => {
+        if (ok) { source = 'live'; diag('whole screen running (overlay excluded)', 'good'); }
+        else diag('whole screen did not start: ' + (nat.error || 'unknown'), 'bad');
+        paint();
+      });
+    }
+    bn.onclick = async () => {
+      if (nat.active) { diag('whole-screen feed stopped by you'); stopScreen(); source = 'mock'; paint(); return; }
+      stopScreen();
+      diag('starting the native whole-screen feed…');
+      // Exclude the overlay AND this browser: in an ordinary tab the browser
+      // window is what shows the result, so without this it feeds on itself.
+      const ok = await nat.start({ exclude: 'hud-panel,Safari,Brave,Chrome,Arc' });
+      if (ok) { source = 'live'; diag('whole screen running — overlay excluded from the capture', 'good'); }
+      else diag('whole screen did not start: ' + (nat.error || 'unknown'), 'bad');
+      paint();
+    };
+  }
   repaintSrc = paint;
   paint();
 }

@@ -136,3 +136,115 @@ export class ScreenCapture {
     return true;
   }
 }
+
+// --------------------------------------------------------------- native feed
+// The whole screen, with the window showing the result left out of it.
+//
+// Same interface as ScreenCapture above, so the renderer cannot tell them
+// apart — but the frames come from the daemon rather than getDisplayMedia.
+// Three things follow from that: no share dialog, no picture-inside-picture
+// (ScreenCaptureKit excludes our overlay, which the browser API cannot do),
+// and no permission needed from the browser at all — it is the daemon's
+// helper that holds Screen Recording, not this page.
+export class NativeFeed {
+  constructor() {
+    this.active = false;
+    this.error = '';
+    this.bmp = null;
+    this.w = 0; this.h = 0;
+    this.onchange = null;
+    this.endedAt = 0;
+    this.startedAt = 0;
+    this.frames = 0;
+    this._gen = 0;
+  }
+
+  get supported() { return typeof createImageBitmap === 'function'; }
+
+  async start(opts = {}) {
+    if (this.active) return true;
+    this.error = ''; this.endedAt = 0; this.frames = 0;
+    try {
+      const q = new URLSearchParams({
+        width: String(opts.width || 1470),
+        fps: String(opts.fps || 30),
+        quality: String(opts.quality || 0.6),
+        // Exclude whatever is showing the result. The overlay is the usual
+        // case; add the browser's name when running in an ordinary tab, or
+        // the render feeds on itself exactly as before.
+        exclude: opts.exclude || 'hud-panel',
+      });
+      const r = await fetch('/screen/start?' + q, { cache: 'no-store' });
+      const j = await r.json();
+      if (!j.started && !j.running) {
+        this.error = j.error || 'could not start the screen feed';
+        return false;
+      }
+    } catch (e) {
+      this.error = 'daemon not reachable: ' + (e.message || e);
+      return false;
+    }
+    this.active = true;
+    this.startedAt = Date.now();
+    this._pump(++this._gen);
+    if (this.onchange) this.onchange();
+    return true;
+  }
+
+  // One request outstanding at a time. The daemon holds each one open until
+  // the next frame lands, so this is paced by the capture, not by a timer.
+  async _pump(gen) {
+    while (this.active && gen === this._gen) {
+      try {
+        const r = await fetch('/screen.jpg', { cache: 'no-store' });
+        if (!r.ok) {
+          let why = 'feed stopped';
+          try { why = (await r.json()).error || why; } catch (_) {}
+          this.error = why;
+          this.endedAt = Date.now();
+          this.stop(true);
+          return;
+        }
+        const bmp = await createImageBitmap(await r.blob());
+        if (!this.active || gen !== this._gen) { bmp.close && bmp.close(); return; }
+        if (this.bmp && this.bmp.close) this.bmp.close();
+        this.bmp = bmp;
+        this.w = bmp.width; this.h = bmp.height;
+        this.frames++;
+      } catch (e) {
+        if (!this.active) return;
+        this.error = String(e.message || e);
+        this.endedAt = Date.now();
+        this.stop(true);
+        return;
+      }
+    }
+  }
+
+  stop(keepError) {
+    if (!keepError) this.error = '';
+    this.active = false;
+    this._gen++;
+    if (this.bmp && this.bmp.close) this.bmp.close();
+    this.bmp = null;
+    this.w = this.h = 0;
+    fetch('/screen/stop', { cache: 'no-store' }).catch(() => {});
+    if (this.onchange) this.onchange();
+  }
+
+  get ready() { return !!(this.active && this.bmp); }
+
+  get label() {
+    if (!this.active) return this.error || 'not capturing';
+    if (!this.ready) return 'starting…';
+    return `${this.w}x${this.h} native`;
+  }
+
+  draw(ctx, w, h) {
+    if (!this.ready) return false;
+    const s = Math.min(w / this.w, h / this.h);
+    const dw = this.w * s, dh = this.h * s;
+    ctx.drawImage(this.bmp, (w - dw) / 2, (h - dh) / 2, dw, dh);
+    return true;
+  }
+}

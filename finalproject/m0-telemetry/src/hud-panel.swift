@@ -30,6 +30,7 @@
 //   --alpha 0.55     opacity
 //   --corner br      br | bl | tr | tl
 //   --full           render the full FUI instead of the compact view
+//   --cover          fill the whole display — PSYCHE mode over everything
 //   --reset          forget the remembered frame
 
 import AppKit
@@ -261,6 +262,13 @@ final class HUD: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     @objc func menuUnzoom() { unzoom() }
 
     func defaultFrame() -> NSRect {
+        // --cover: the entire display, menu bar and Dock included. This is
+        // PSYCHE mode proper — the effect over everything, rather than a
+        // panel in a corner showing it. `frame`, not `visibleFrame`, because
+        // visibleFrame stops short of the menu bar.
+        if flag("cover") {
+            return (NSScreen.main ?? NSScreen.screens[0]).frame
+        }
         let s = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let x = CORNER.hasSuffix("l") ? s.minX + MARGIN : s.maxX - PW - MARGIN
         let y = CORNER.hasPrefix("t") ? s.maxY - PH - MARGIN : s.minY + MARGIN
@@ -270,6 +278,7 @@ final class HUD: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     // A remembered frame is only honoured if it still intersects a screen —
     // otherwise unplugging a display would strand the panel off-canvas.
     func startFrame() -> NSRect {
+        if flag("cover") { return defaultFrame() }      // never a remembered corner
         if flag("reset") { UserDefaults.standard.removeObject(forKey: FRAME_KEY); return defaultFrame() }
         guard let s = UserDefaults.standard.string(forKey: FRAME_KEY) else { return defaultFrame() }
         let f = NSRectFromString(s)
@@ -340,7 +349,13 @@ final class HUD: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     }
 
     func load() {
-        let q = COMPACT ? "?compact=1" : ""
+        // In cover mode the page starts the native whole-screen feed by
+        // itself: nobody is going to click a button on a click-through
+        // window that fills the display.
+        var parts: [String] = []
+        if COMPACT { parts.append("compact=1") }
+        if flag("cover") { parts.append("native=1"); parts.append("cover=1") }
+        let q = parts.isEmpty ? "" : "?" + parts.joined(separator: "&")
         guard let u = URL(string: "http://localhost:\(PORT)\(viewPath)\(q)") else { return }
         web.load(URLRequest(url: u))
     }

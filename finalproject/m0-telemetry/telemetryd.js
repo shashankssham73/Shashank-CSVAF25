@@ -465,6 +465,123 @@ setInterval(() => {
 
 const axCache = {};
 
+// ---------------------------------------------------------------- screen feed
+// Spawns m1-desktop/bin/screen-feed, which captures the display through
+// ScreenCaptureKit with our own overlay excluded, and writes JPEG frames on
+// stdout framed as [4-byte big-endian length][jpeg].
+//
+// This is what lets the effect run on the whole desktop. The browser's own
+// getDisplayMedia captures everything, including the window showing the
+// processed result, so the effect photographs itself. ScreenCaptureKit can
+// exclude named applications; the browser API cannot.
+const screenFeed = { child:null, latest:null, at:0, waiters:[], err:'', frames:0 };
+
+function screenFeedStart(opts = {}) {
+  if (screenFeed.child) return true;
+  const bin = path.join(ROOT, '..', 'm1-desktop', 'bin', 'screen-feed');
+  if (!fs.existsSync(bin)) {
+    screenFeed.err = 'screen-feed is not built — run ./build.sh';
+    return false;
+  }
+  const args = ['--width',   String(Math.min(2560, Math.max(320, +opts.width   || 1470))),
+                '--fps',     String(Math.min(60,   Math.max(1,   +opts.fps     || 30))),
+                '--quality', String(Math.min(0.95, Math.max(0.2, +opts.quality || 0.6)))];
+  // Exclude whatever is displaying the result: the overlay by default, or a
+  // browser name when the render is running in an ordinary tab.
+  for (const name of String(opts.exclude || 'hud-panel').split(',')) {
+    const n = name.trim();
+    if (n) args.push('--exclude', n);
+  }
+  screenFeed.err = '';
+  screenFeed.frames = 0;
+
+  const p = spawn(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+  screenFeed.child = p;
+
+  // Reassemble the length-prefixed frames: a frame can arrive in pieces, and
+  // several can arrive in one chunk.
+  let buf = Buffer.alloc(0);
+  p.stdout.on('data', d => {
+    buf = buf.length ? Buffer.concat([buf, d]) : d;
+    for (;;) {
+      if (buf.length < 4) break;
+      const n = buf.readUInt32BE(0);
+      if (n > 32 * 1024 * 1024) { buf = Buffer.alloc(0); break; }    // desync guard
+      if (buf.length < 4 + n) break;
+      screenFeed.latest = buf.subarray(4, 4 + n);
+      screenFeed.at = Date.now();
+      screenFeed.frames++;
+      buf = buf.subarray(4 + n);
+      for (const w of screenFeed.waiters.splice(0)) w();
+    }
+  });
+  p.stderr.on('data', d => {
+    const s = String(d).trim();
+    if (s) { screenFeed.err = s.split('\n').pop(); console.log('[screen-feed]', s); }
+  });
+  p.on('close', code => {
+    screenFeed.child = null;
+    if (code) console.log('[screen-feed] exited', code);
+    for (const w of screenFeed.waiters.splice(0)) w();
+  });
+  p.on('error', e => { screenFeed.err = String(e.message || e); screenFeed.child = null; });
+  return true;
+}
+
+function screenFeedStop() {
+  if (screenFeed.child) { try { screenFeed.child.kill('SIGTERM'); } catch (_) {} }
+  screenFeed.child = null;
+  screenFeed.latest = null;
+}
+
+function handleScreenFeed(url, res) {
+  const json = (o, code = 200) => {
+    res.writeHead(code, { 'Content-Type':'application/json', 'Cache-Control':'no-store' });
+    res.end(JSON.stringify(o));
+  };
+  const status = () => ({
+    running: !!screenFeed.child,
+    frames: screenFeed.frames,
+    ageMs: screenFeed.at ? Date.now() - screenFeed.at : null,
+    error: screenFeed.err || '',
+  });
+
+  if (url.pathname === '/screen/status') return json(status());
+  if (url.pathname === '/screen/stop')   { screenFeedStop(); return json(status()); }
+  if (url.pathname === '/screen/start')  {
+    const started = screenFeedStart({
+      width:   url.searchParams.get('width'),
+      fps:     url.searchParams.get('fps'),
+      quality: url.searchParams.get('quality'),
+      exclude: url.searchParams.get('exclude'),
+    });
+    return json({ ...status(), started });
+  }
+
+  // /screen.jpg — held open until the NEXT frame lands, so the client is
+  // paced by the capture rather than by a guessed polling interval.
+  if (!screenFeed.child && !screenFeedStart({})) {
+    return json({ error: screenFeed.err || 'screen feed unavailable' }, 503);
+  }
+  const send = () => {
+    if (!screenFeed.latest) {
+      return json({ error: screenFeed.err
+        || 'no frame yet — is Screen Recording granted to the daemon?' }, 503);
+    }
+    res.writeHead(200, { 'Content-Type':'image/jpeg',
+                         'Content-Length': screenFeed.latest.length,
+                         'Cache-Control':'no-store' });
+    res.end(screenFeed.latest);
+  };
+  if (url.searchParams.get('next') === '0' && screenFeed.latest) return send();
+
+  let done = false;
+  const fire = () => { if (done) return; done = true; clearTimeout(t); send(); };
+  const t = setTimeout(fire, 2000);                  // never hold a socket forever
+  screenFeed.waiters.push(fire);
+  res.on('close', () => { done = true; clearTimeout(t); });
+}
+
 const handler = (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (url.pathname === '/stream') {
@@ -631,6 +748,13 @@ const handler = (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok:false, trusted:false, elements:[], error:String(e.message || e) }));
     });
+    return;
+  }
+
+  // ---- the real screen, minus our own overlay --------------------------
+  if (url.pathname === '/screen.jpg'   || url.pathname === '/screen/start'
+   || url.pathname === '/screen/stop'  || url.pathname === '/screen/status') {
+    handleScreenFeed(url, res);
     return;
   }
 

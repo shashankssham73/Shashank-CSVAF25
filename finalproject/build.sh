@@ -21,5 +21,8 @@ build m0-telemetry/src/fast-sampler.swift   m0-telemetry/bin/fast-sampler
 build m0-telemetry/src/hud-panel.swift      m0-telemetry/bin/hud-panel
 build m1-desktop/src/probe.swift            m1-desktop/bin_probe
 build m1-desktop/src/ax-reader.swift        m1-desktop/bin/ax-reader
+build m1-desktop/src/screen-feed.swift      m1-desktop/bin/screen-feed
 echo
-echo "done. now: node m0-telemetry/telemetryd.js"
+echo "done."
+echo "  patcher:      node m0-telemetry/telemetryd.js   then open /m1/psyche.html"
+echo "  whole screen: ./psyche.sh"

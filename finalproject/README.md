@@ -19,16 +19,31 @@ image.
 (`xcode-select --install`). No `npm install` — there are no dependencies.
 
 ```sh
-git clone -b finalproject-psychedelic-os \
+git clone \
   https://github.com/shashankssham73/Shashank-CSVAF25.git
 cd Shashank-CSVAF25/finalproject
 
-./build.sh                          # compiles 5 small Swift helpers
+./build.sh                          # compiles 6 small Swift helpers
 node m0-telemetry/telemetryd.js     # serves on 127.0.0.1:7777, loopback only
 ```
 
 Then open **<http://127.0.0.1:7777/m1/psyche.html>** in Safari or any
 Chromium browser.
+
+### …or run it over the whole desktop
+
+```sh
+./psyche.sh              # the effect over everything, click-through
+./psyche.sh --patcher    # …and the patcher too, to change it live
+```
+
+A click-through window covering the display shows your real screen with the
+patch applied. Quit from the menu bar icon, or `pkill -f hud-panel`.
+
+This needs **Screen Recording** granted (one prompt, the first time). It is
+granted to the daemon's helper, not to the browser — and because
+ScreenCaptureKit can exclude named applications, the overlay is left out of
+its own capture, so the effect does not photograph itself.
 
 In the render pane click **`mock desktop`**, pick **`acid bath`** from the
 presets dropdown, and drag the `Constant` wired to the `chain.mix` `Output`
@@ -40,6 +55,7 @@ The two live-screen sources each need one grant, in System Settings ▸ Privacy
 
 | to use | grant | to |
 |---|---|---|
+| `whole screen` / `./psyche.sh` | Screen & System Audio Recording | whatever launches it (Terminal) |
 | `capture my screen` | Screen & System Audio Recording | your browser |
 | `read my screen` | Accessibility | `m1-desktop/bin/ax-reader` |
 
@@ -85,10 +101,13 @@ Working: reads the live screen both ways · effects scoped to a chosen window
 · everything patchable while it runs · presets save and load · a per-block
 live count of how many things each effect is actually reaching.
 
-Not yet: the effect runs in a window showing a processed **copy** of the
-screen. Altering the actual desktop needs a native full-screen always-on-top
-overlay fed by ScreenCaptureKit with `excludingApplications:` — designed, not
-built.
+Whole-screen PSYCHE mode works: `./psyche.sh` puts the processed screen over
+the real one in a click-through overlay, with that overlay excluded from the
+capture so there is no picture-inside-a-picture. `m1-desktop/src/screen-feed.swift`
+does the capture; the existing renderer does all the processing, so every
+operator and preset works there unchanged.
+
+Not yet: the overlay covers one display, not several.
 
 ## Tests
 

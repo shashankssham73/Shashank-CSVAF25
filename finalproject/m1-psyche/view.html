@@ -21,6 +21,8 @@
   #src #bfloat.on { background:rgba(20,60,45,0.85); border-color:#39d9a4; color:#9affd8; }
   #src #bfloat:disabled { opacity:0.4; cursor:not-allowed; }
   #src #bwin { border-color:rgba(130,160,220,0.6); color:#9db8e8; }
+  #src #bnative { border-color:rgba(200,140,230,0.65); color:#d9a8ee; }
+  #src #bnative.on { background:rgba(58,24,72,0.85); border-color:#c77fe8; color:#f0d2ff; }
   #src { flex-wrap:wrap; max-width:calc(100% - 28px); }
   #src .note { color:#5a7788; align-self:center; padding-left:4px; max-width:46ch; }
   body.compact #src { transform:scale(0.82); transform-origin:0 0; }
@@ -47,6 +49,7 @@
   <button id="bbot">my folders as a tree</button>
   <button id="bax">read my screen</button>
   <button id="blive">capture my screen</button>
+  <button id="bnative" title="The whole screen through ScreenCaptureKit, with the window showing the result excluded from the capture — so the effect does not photograph itself. No share dialog: the daemon's helper holds the Screen Recording permission, not this page.">whole screen</button>
   <button id="bfloat" title="Pop the render into a floating window that stays on top of every app, follows you across Spaces, and keeps rendering while this tab is in the background. Drag its corner to resize it.">float on top</button>
   <button id="bwin" title="Open the render in a separate, resizable browser window. Not always-on-top, but it runs its own screen capture and does not share this tab's video budget — put it on a second display or another Space.">own window</button>
   <span class="note" id="snote"></span>
