@@ -27,6 +27,10 @@ let status = 'cut across the sheet to divide it';
 // screen, which is a lot of sheet to lose to one click.
 let punchR = 0.08;
 let cursor = null;
+const FULL = { x: 0, y: 0, w: 1, h: 1 };
+const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v);
+// The piece being cropped, and the rectangle being dragged over its window.
+let cropping = null, cropDrag = null;
 
 const cap = new ScreenCapture();
 const nat = new NativeFeed();
@@ -106,11 +110,17 @@ function draw() {
     if (wf && wf.ready) {
       // A window fills its own piece rather than being placed on the sheet:
       // you chose that window for that shape, so it should be framed by it.
+      // A crop narrows that to part of the window — one column, one panel,
+      // the video and none of the chrome.
       const b = L.bbox(p.poly);
       const [bw, bh] = [b.w * W, b.h * H];
-      const s = Math.max(bw / wf.w, bh / wf.h);          // cover, not contain
-      const dw = wf.w * s, dh = wf.h * s;
-      ctx.drawImage(wf.bmp, b.x * W + (bw - dw) / 2, b.y * H + (bh - dh) / 2, dw, dh);
+      const c = (p.source && p.source.crop) || FULL;
+      const sx = c.x * wf.w, sy = c.y * wf.h;
+      const sw = Math.max(1, c.w * wf.w), sh = Math.max(1, c.h * wf.h);
+      const s = Math.max(bw / sw, bh / sh);              // cover, not contain
+      const dw = sw * s, dh = sh * s;
+      ctx.drawImage(wf.bmp, sx, sy, sw, sh,
+                    b.x * W + (bw - dw) / 2, b.y * H + (bh - dh) / 2, dw, dh);
     } else if (ready) {
       // The offset is what makes a piece a cut-out: it samples the picture
       // from where the piece came from, not from where it now sits.
@@ -175,6 +185,42 @@ function draw() {
     ctx.restore();
   }
 
+  // ---- crop editor ---------------------------------------------------
+  // Drawn over the sheet rather than in a panel: you are choosing a part of
+  // a picture, so the picture should be as big as the screen allows.
+  if (cropping) {
+    const p = layout.panes.find(q => q.id === cropping);
+    const wf = p && p.source ? winFeeds.get(p.source.id) : null;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = 'rgba(6,9,14,0.93)';
+    ctx.fillRect(0, 0, W, H);
+    if (wf && wf.ready) {
+      const r = cropRect(wf);
+      ctx.drawImage(wf.bmp, r.x, r.y, r.w, r.h);
+      const c = (p.source.crop) || FULL;
+      // everything outside the crop, dimmed
+      ctx.fillStyle = 'rgba(6,9,14,0.72)';
+      ctx.beginPath();
+      ctx.rect(r.x, r.y, r.w, r.h);
+      ctx.rect(r.x + c.x * r.w, r.y + c.y * r.h, c.w * r.w, c.h * r.h);
+      ctx.fill('evenodd');
+      ctx.strokeStyle = '#7fe0b8';
+      ctx.lineWidth = 2 * DPR;
+      ctx.strokeRect(r.x + c.x * r.w, r.y + c.y * r.h, c.w * r.w, c.h * r.h);
+      ctx.strokeStyle = 'rgba(127,224,184,0.35)';
+      ctx.lineWidth = 1 * DPR;
+      ctx.strokeRect(r.x, r.y, r.w, r.h);
+    }
+    ctx.fillStyle = 'rgba(207,224,234,0.92)';
+    ctx.font = `${13 * DPR}px ui-monospace, Menlo, monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(wf && wf.ready
+      ? 'drag a rectangle over the part you want  ·  enter to keep  ·  a for all  ·  esc to cancel'
+      : 'waiting for that window…', W / 2, 34 * DPR);
+    ctx.restore();
+  }
+
   // readout
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.font = `${11 * DPR}px ui-monospace, Menlo, monospace`;
@@ -196,6 +242,19 @@ function draw() {
 // ------------------------------------------------------------------ gesture
 cv.addEventListener('pointermove', e => {
   const [x, y] = toSheet(e.clientX, e.clientY);
+  if (cropping) {
+    if (!cropDrag) return;
+    const p = layout.panes.find(q => q.id === cropping);
+    const wf = p && p.source ? winFeeds.get(p.source.id) : null;
+    if (!wf || !wf.ready) return;
+    const r = cropRect(wf);
+    const px = e.clientX * DPR, py = e.clientY * DPR;
+    const u0 = clamp01((cropDrag.x - r.x) / r.w), v0 = clamp01((cropDrag.y - r.y) / r.h);
+    const u1 = clamp01((px - r.x) / r.w),         v1 = clamp01((py - r.y) / r.h);
+    p.source.crop = { x: Math.min(u0, u1), y: Math.min(v0, v1),
+                      w: Math.abs(u1 - u0), h: Math.abs(v1 - v0) };
+    return;
+  }
   if (drag) {
     if (drag.kind === 'cut') drag.b = [x, y];
     else if (drag.kind === 'move') {
@@ -207,12 +266,19 @@ cv.addEventListener('pointermove', e => {
   cursor = [x, y];
   const p = L.paneAt(layout, x, y);
   hover = p ? p.id : null;
-  cv.style.cursor = tool === 'cut' ? 'crosshair' : tool === 'move' ? 'grab' : 'copy';
+  cv.style.cursor = tool === 'cut' ? 'crosshair' : tool === 'move' ? 'grab'
+                  : tool === 'use' ? 'pointer' : 'copy';
 });
 
 // Scroll to size the next shape. Shown live in the readout, because a size
 // you cannot see until after you have placed it is a guess.
 cv.addEventListener('wheel', e => {
+  if (tool === 'use') {
+    e.preventDefault();
+    poke('scroll', e.clientX * DPR, e.clientY * DPR,
+         '&dy=' + Math.max(-6, Math.min(6, Math.round(-e.deltaY / 40))));
+    return;
+  }
   if (!PUNCH[tool]) return;
   e.preventDefault();
   punchR = Math.max(0.02, Math.min(0.45, punchR * (e.deltaY > 0 ? 1.08 : 1 / 1.08)));
@@ -220,6 +286,11 @@ cv.addEventListener('wheel', e => {
 }, { passive: false });
 
 cv.addEventListener('pointerdown', e => {
+  if (cropping) {
+    cropDrag = { x: e.clientX * DPR, y: e.clientY * DPR };
+    cv.setPointerCapture(e.pointerId);
+    return;
+  }
   const [x, y] = toSheet(e.clientX, e.clientY);
   const p = L.paneAt(layout, x, y);
   cv.setPointerCapture(e.pointerId);
@@ -227,6 +298,7 @@ cv.addEventListener('pointerdown', e => {
   // With the picker open, a click selects rather than cuts: you are aiming
   // at a piece, not making a new one.
   if (picking) { if (p) { selected = p.id; say(`piece selected — now click a window`); } return; }
+  if (tool === 'use') { poke('click', e.clientX * DPR, e.clientY * DPR); return; }
   if (tool === 'cut') { drag = { kind: 'cut', a: [x, y], b: [x, y] }; return; }
   if (tool === 'move') {
     if (!p) return;
@@ -245,6 +317,15 @@ cv.addEventListener('pointerdown', e => {
 });
 
 addEventListener('pointerup', () => {
+  if (cropping) {
+    // A click with no drag means "all of it" rather than a zero-size crop,
+    // which would otherwise show one pixel stretched across the piece.
+    const p = layout.panes.find(q => q.id === cropping);
+    if (p && p.source && p.source.crop
+        && (p.source.crop.w < 0.01 || p.source.crop.h < 0.01)) delete p.source.crop;
+    cropDrag = null;
+    return;
+  }
   if (drag && drag.kind === 'cut') {
     const [ax, ay] = drag.a, [bx, by] = drag.b;
     const far = Math.hypot(bx - ax, by - ay) > 0.02;
@@ -278,6 +359,65 @@ function punchAt(x, y) {
   const p = L.punch(layout, poly, tool);
   selected = p.id;
   say(`punched a ${tool}`);
+}
+
+// The window frame, letterboxed into most of the screen.
+function cropRect(wf) {
+  const pad = 70 * DPR;
+  const maxW = W - pad * 2, maxH = H - pad * 2;
+  const s = Math.min(maxW / wf.w, maxH / wf.h);
+  const w = wf.w * s, h = wf.h * s;
+  return { x: (W - w) / 2, y: (H - h) / 2, w, h };
+}
+
+function startCrop() {
+  if (!selected) { say('select a piece with a window in it first'); return; }
+  const p = layout.panes.find(q => q.id === selected);
+  if (!p || !p.source || p.source.t !== 'window') {
+    say('that piece has no window — drop one in first'); return;
+  }
+  cropping = p.id;
+  say('drag over the part of the window you want');
+}
+
+function endCrop(keep) {
+  cropping = null; cropDrag = null;
+  say(keep ? 'crop set' : 'crop cancelled');
+}
+
+// Where in its window a point inside a piece falls, 0..1 — the exact inverse
+// of the cover-fit used to draw it, crop included. Without this a click in a
+// cropped piece would land somewhere else entirely in the real window.
+function pointToWindow(p, px, py) {
+  const wf = p.source && p.source.t === 'window' ? winFeeds.get(p.source.id) : null;
+  if (!wf || !wf.ready) return null;
+  const b = L.bbox(p.poly);
+  const bw = b.w * W, bh = b.h * H;
+  const c = (p.source.crop) || FULL;
+  const sw = Math.max(1, c.w * wf.w), sh = Math.max(1, c.h * wf.h);
+  const s = Math.max(bw / sw, bh / sh);
+  const dw = sw * s, dh = sh * s;
+  const dx0 = b.x * W + (bw - dw) / 2, dy0 = b.y * H + (bh - dh) / 2;
+  const uu = (px - dx0) / dw, vv = (py - dy0) / dh;
+  if (uu < 0 || uu > 1 || vv < 0 || vv > 1) return null;
+  return { u: c.x + uu * c.w, v: c.y + vv * c.h, win: p.source.id, app: p.source.app };
+}
+
+// The piece is a window, so clicking it should reach that window. The daemon
+// resolves 0..1 against where the window is NOW, because it may have moved
+// since the layout was cut.
+async function poke(t, px, py, extra = '') {
+  const [x, y] = toSheet(px / DPR, py / DPR);
+  const p = L.paneAt(layout, x, y);
+  if (!p || !p.source || p.source.t !== 'window') { say('that piece has no window to click into'); return; }
+  const w = pointToWindow(p, px, py);
+  if (!w) { say('outside the window inside that piece'); return; }
+  try {
+    const r = await fetch(`/poke?win=${w.win}&u=${w.u.toFixed(5)}&v=${w.v.toFixed(5)}`
+                          + `&type=${t}${extra}`, { cache: 'no-store' });
+    const j = await r.json();
+    say(j.ok ? `${t} → ${j.app}` : `could not reach it: ${j.error || r.status}`);
+  } catch (e) { say('poke failed: ' + e.message); }
 }
 
 function say(s) { status = s; }
@@ -373,6 +513,7 @@ function closePicker() { picking = false; pick.classList.remove('on'); }
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 document.getElementById('windows').onclick = () => (picking ? closePicker() : openPicker());
+document.getElementById('crop').onclick = () => (cropping ? endCrop(true) : startCrop());
 
 // ------------------------------------------------------------------- tools
 for (const b of document.querySelectorAll('[data-tool]')) {
@@ -381,6 +522,7 @@ for (const b of document.querySelectorAll('[data-tool]')) {
     for (const o of document.querySelectorAll('[data-tool]')) o.classList.toggle('on', o === b);
     say(tool === 'cut' ? 'drag across the sheet to divide it'
       : tool === 'move' ? 'drag a piece — hold shift to move the frame but not the picture'
+      : tool === 'use' ? 'click and scroll inside a piece — it reaches the real window'
       : tool === 'delete' ? 'click a piece to remove it'
       : `${tool} · ${(punchR * 200).toFixed(0)}% wide — scroll to resize, click to place`);
   };
@@ -432,6 +574,17 @@ addEventListener('keydown', e => {
   if (e.key === 'Backspace' || e.key === 'Delete') {
     if (selected && L.removePane(layout, selected)) { selected = null; say('removed a piece'); }
   }
+  if (cropping) {
+    if (e.key === 'Enter') endCrop(true);
+    if (e.key === 'Escape') endCrop(false);
+    if (e.key === 'a') {
+      const p = layout.panes.find(q => q.id === cropping);
+      if (p && p.source) delete p.source.crop;
+      say('showing the whole window');
+    }
+    return;
+  }
+  if (e.key === 'c') startCrop();
   if (e.key === 'Escape' && picking) closePicker();
   if (e.key === ']') { if (selected) { L.raisePane(layout, selected); say('brought to the front'); } }
 });

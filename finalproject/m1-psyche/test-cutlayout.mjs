@@ -164,6 +164,22 @@ console.log('\nsaving and loading');
   ok('null falls back to a whole sheet', L.fromJSON(null).panes.length === 1);
 }
 
+console.log('\ncropping a window source');
+{
+  const lay = L.newLayout();
+  const p = lay.panes[0];
+  p.source = { t:'window', id: 42, app:'Brave', crop:{ x:0.1, y:0.2, w:0.5, h:0.4 } };
+  const back = L.fromJSON(JSON.parse(JSON.stringify(L.toJSON(lay))));
+  const c = back.panes[0].source.crop;
+  ok('a crop survives a round trip',
+     near(c.x, 0.1) && near(c.y, 0.2) && near(c.w, 0.5) && near(c.h, 0.4));
+  L.cutPane(lay, p.id, 0.5, 0, 0.5, 1);
+  ok('cutting a cropped piece keeps the crop on both halves',
+     lay.panes[0].source.crop.w === 0.5 && lay.panes[1].source.crop.w === 0.5);
+  ok('cutting a piece with a window keeps its name',
+     lay.panes[1].source.app === 'Brave');
+}
+
 console.log('\ncarrying the picture');
 {
   const lay = L.newLayout();

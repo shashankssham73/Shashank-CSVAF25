@@ -22,6 +22,7 @@ build m0-telemetry/src/hud-panel.swift      m0-telemetry/bin/hud-panel
 build m1-desktop/src/probe.swift            m1-desktop/bin_probe
 build m1-desktop/src/ax-reader.swift        m1-desktop/bin/ax-reader
 build m1-desktop/src/screen-feed.swift      m1-desktop/bin/screen-feed
+build m1-desktop/src/poke.swift             m1-desktop/bin/poke
 echo
 echo "done."
 echo "  patcher:      node m0-telemetry/telemetryd.js   then open /m1/psyche.html"

@@ -181,9 +181,12 @@ export function pane(poly, name = '') {
     id: nextId(),
     poly,
     name,
-    // What shows inside. Filled in by the next stage; a pane with no source
-    // shows the screen underneath it, which is the sensible default for a
-    // cut in a sheet laid over the desktop.
+    // What shows inside. A window source may carry a `crop` in 0..1 of that
+    // window, so a piece can hold one column of a spreadsheet or just the
+    // video out of a player rather than the whole window. No crop means the
+    // whole thing.
+    // A pane with no source shows the screen underneath it, which is the
+    // sensible default for a cut in a sheet laid over the desktop.
     source: null,
     effect: null,
     hidden: false,

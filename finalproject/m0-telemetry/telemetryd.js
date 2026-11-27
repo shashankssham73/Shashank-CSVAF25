@@ -611,6 +611,33 @@ function screenFeedStop(win) {
   }
 }
 
+// Listing costs a process spawn, and a drag sends events faster than that.
+// One second is long enough to make a drag cheap and short enough that a
+// window moved by hand is resolved against where it actually is.
+let winCache = { at: 0, ws: null, pending: [] };
+function windowList(cb) {
+  if (winCache.ws && Date.now() - winCache.at < 1000) return cb(winCache.ws, null);
+  winCache.pending.push(cb);
+  if (winCache.pending.length > 1) return;          // one spawn, many callers
+  const done = (ws, err) => {
+    if (ws) { winCache.ws = ws; winCache.at = Date.now(); }
+    for (const f of winCache.pending.splice(0)) f(ws, err);
+  };
+  const bin = path.join(ROOT, '..', 'm1-desktop', 'bin', 'screen-feed');
+  if (!fs.existsSync(bin)) return done(null, 'screen-feed is not built — run ./build.sh');
+  const p = spawn(bin, ['--list']);
+  let out = '', err = '';
+  const kill = setTimeout(() => { try { p.kill('SIGKILL'); } catch (_) {} }, 6000);
+  p.stdout.on('data', d => { out += d; });
+  p.stderr.on('data', d => { err += d; });
+  p.on('close', () => {
+    clearTimeout(kill);
+    try { done(JSON.parse(out).windows || [], null); }
+    catch (_) { done(null, err.trim() || 'could not list windows'); }
+  });
+  p.on('error', e => { clearTimeout(kill); done(null, String(e.message || e)); });
+}
+
 function handleScreenFeed(url, res) {
   const json = (o, code = 200) => {
     res.writeHead(code, { 'Content-Type':'application/json', 'Cache-Control':'no-store' });
@@ -619,21 +646,38 @@ function handleScreenFeed(url, res) {
   const win = url.searchParams.get('win') || '';
   const key = feedKey(win.replace(/\D/g, ''));
 
+  // ---- click through a piece into the window inside it ------------------
+  // The page sends WHERE in the window, 0..1, not where on screen: the
+  // window may have moved since the layout was made, and only the daemon
+  // has a fresh list to resolve it against.
+  if (url.pathname === '/poke') {
+    const id = +(url.searchParams.get('win') || 0);
+    const u = +(url.searchParams.get('u') || 0), v = +(url.searchParams.get('v') || 0);
+    const type = String(url.searchParams.get('type') || 'click');
+    if (!['click', 'move', 'down', 'up', 'scroll'].includes(type)) return json({ error:'bad type' }, 400);
+    if (!id || !(u >= 0 && u <= 1 && v >= 0 && v <= 1)) return json({ error:'bad target' }, 400);
+    windowList((ws, err) => {
+      if (err) return json({ error: err }, 503);
+      const w = ws.find(q => q.id === id);
+      if (!w) return json({ error:'that window is gone' }, 404);
+      const x = Math.round(w.x + u * w.w), y = Math.round(w.y + v * w.h);
+      const bin = path.join(ROOT, '..', 'm1-desktop', 'bin', 'poke');
+      if (!fs.existsSync(bin)) return json({ error:'poke is not built — run ./build.sh' }, 503);
+      const args = ['--pid', String(w.pid), '--x', String(x), '--y', String(y), '--type', type];
+      if (type === 'scroll') args.push('--dy', String(Math.max(-10, Math.min(10,
+        Math.round(+(url.searchParams.get('dy') || 0))))));
+      const p = spawn(bin, args);
+      let err2 = '';
+      p.stderr.on('data', d => { err2 += d; });
+      p.on('close', () => json({ ok: !err2, x, y, app: w.app, error: err2.trim() }));
+      p.on('error', e => json({ error: String(e.message || e) }, 500));
+    });
+    return;
+  }
+
   // ---- what windows are there ------------------------------------------
   if (url.pathname === '/windows') {
-    const bin = path.join(ROOT, '..', 'm1-desktop', 'bin', 'screen-feed');
-    if (!fs.existsSync(bin)) return json({ error:'screen-feed is not built — run ./build.sh' }, 503);
-    const p = spawn(bin, ['--list']);
-    let out = '', err = '';
-    const kill = setTimeout(() => { try { p.kill('SIGKILL'); } catch (_) {} }, 6000);
-    p.stdout.on('data', d => { out += d; });
-    p.stderr.on('data', d => { err += d; });
-    p.on('close', () => {
-      clearTimeout(kill);
-      try { json(JSON.parse(out)); }
-      catch (_) { json({ windows: [], error: err.trim() || 'could not list windows' }, 503); }
-    });
-    p.on('error', e => { clearTimeout(kill); json({ windows: [], error: String(e.message || e) }, 503); });
+    windowList((ws, err) => (err ? json({ windows: [], error: err }, 503) : json({ windows: ws })));
     return;
   }
 
@@ -871,7 +915,7 @@ const handler = (req, res) => {
   // ---- the real screen, minus our own overlay --------------------------
   if (url.pathname === '/screen.jpg'   || url.pathname === '/screen/start'
    || url.pathname === '/screen/stop'  || url.pathname === '/screen/status'
-   || url.pathname === '/windows') {
+   || url.pathname === '/windows'   || url.pathname === '/poke') {
     handleScreenFeed(url, res);
     return;
   }

@@ -179,6 +179,7 @@ Task {
             for w in ws.prefix(80) {
                 let app = w.owningApplication?.applicationName ?? ""
                 rows.append("{\"id\":\(w.windowID),"
+                    + "\"pid\":\(w.owningApplication?.processID ?? 0),"
                     + "\"app\":\(jsonString(app)),"
                     + "\"title\":\(jsonString(w.title ?? "")),"
                     + "\"x\":\(Int(w.frame.minX)),\"y\":\(Int(w.frame.minY)),"
