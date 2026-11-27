@@ -216,7 +216,8 @@ export function cutPane(layout, id, ax, ay, bx, by, minArea = 0.0008) {
   const [a, b] = slice(p.poly, ax, ay, bx, by);
   if (a.length < 3 || b.length < 3) return null;
   if (Math.abs(area(a)) < minArea || Math.abs(area(b)) < minArea) return null;
-  const q = { ...p, id: nextId(), poly: b };
+  if (!p.source) p.name = '';
+  const q = { ...p, id: nextId(), poly: b, name: p.source ? p.name : '' };
   p.poly = a;
   layout.panes.splice(i + 1, 0, q);
   return [p, q];

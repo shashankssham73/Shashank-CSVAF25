@@ -23,6 +23,10 @@ let selected = null;
 let drag = null;
 let hover = null;
 let status = 'cut across the sheet to divide it';
+// Radius of a punched shape, in sheet-x units. 0.13 covered a third of the
+// screen, which is a lot of sheet to lose to one click.
+let punchR = 0.08;
+let cursor = null;
 
 const cap = new ScreenCapture();
 const nat = new NativeFeed();
@@ -123,9 +127,12 @@ function draw() {
     ctx.save();
     tracePoly(ctx, p.poly);
     const on = selected === p.id, hot = hover === p.id;
-    ctx.strokeStyle = on ? '#ffd27f' : hot ? `hsl(${hue} 70% 68%)` : `hsl(${hue} 50% 48% / 0.75)`;
-    ctx.lineWidth = (on ? 2.5 : 1.5) * DPR;
+    const target = dropTarget === p.id;
+    ctx.strokeStyle = target ? '#7fe0b8'
+                    : on ? '#ffd27f' : hot ? `hsl(${hue} 70% 68%)` : `hsl(${hue} 50% 48% / 0.75)`;
+    ctx.lineWidth = (target ? 4 : on ? 2.5 : 1.5) * DPR;
     ctx.stroke();
+    if (target) { ctx.fillStyle = 'rgba(127,224,184,0.16)'; ctx.fill(); }
     ctx.restore();
 
     if (wf && !wf.ready) {
@@ -143,6 +150,17 @@ function draw() {
       ctx.fillStyle = 'rgba(255,255,255,0.55)';
       ctx.fillText(p.name, px, py);
     }
+  }
+
+  // the shape about to be placed, under the cursor
+  if (PUNCH[tool] && cursor && !drag) {
+    ctx.save();
+    tracePoly(ctx, PUNCH[tool](cursor[0], cursor[1], punchR, W / H));
+    ctx.strokeStyle = 'rgba(255,210,127,0.85)';
+    ctx.lineWidth = 1.5 * DPR;
+    ctx.setLineDash([6 * DPR, 5 * DPR]);
+    ctx.stroke();
+    ctx.restore();
   }
 
   // the cut being dragged
@@ -186,10 +204,20 @@ cv.addEventListener('pointermove', e => {
     }
     return;
   }
+  cursor = [x, y];
   const p = L.paneAt(layout, x, y);
   hover = p ? p.id : null;
   cv.style.cursor = tool === 'cut' ? 'crosshair' : tool === 'move' ? 'grab' : 'copy';
 });
+
+// Scroll to size the next shape. Shown live in the readout, because a size
+// you cannot see until after you have placed it is a guess.
+cv.addEventListener('wheel', e => {
+  if (!PUNCH[tool]) return;
+  e.preventDefault();
+  punchR = Math.max(0.02, Math.min(0.45, punchR * (e.deltaY > 0 ? 1.08 : 1 / 1.08)));
+  say(`${tool} · ${(punchR * 200).toFixed(0)}% wide — click to place`);
+}, { passive: false });
 
 cv.addEventListener('pointerdown', e => {
   const [x, y] = toSheet(e.clientX, e.clientY);
@@ -246,7 +274,7 @@ function punchAt(x, y) {
   // Radius in sheet-x units, corrected on y so a circle is round on screen
   // rather than an ellipse the shape of the window.
   const aspect = W / H;
-  const poly = make(x, y, 0.13, aspect);
+  const poly = make(x, y, punchR, aspect);
   const p = L.punch(layout, poly, tool);
   selected = p.id;
   say(`punched a ${tool}`);
@@ -261,6 +289,7 @@ function say(s) { status = s; }
 // collage, even if they cannot stream until they are visible.
 const pick = document.getElementById('pick');
 let picking = false;
+let dragWin = null, dropTarget = null, winList = [];
 
 async function openPicker() {
   picking = true;
@@ -270,6 +299,7 @@ async function openPicker() {
   try {
     const j = await (await fetch('/windows', { cache: 'no-store' })).json();
     ws = j.windows || [];
+    winList = ws;
     if (j.error) throw new Error(j.error);
   } catch (e) {
     pick.innerHTML = `<div class="ph">could not list windows</div>`
@@ -282,23 +312,63 @@ async function openPicker() {
         + `<b>${esc(w.app)}</b>${w.title ? ' · ' + esc(w.title.slice(0, 42)) : ''}`
         + `<span class="pdim">${w.w}×${w.h}${w.onScreen ? '' : ' · hidden'}</span></div>`).join('');
   for (const row of pick.querySelectorAll('.prow')) {
+    // Dragging is the gesture that matches the metaphor: you pick a window
+    // up and drop it into a hole you cut. Clicking still works, because a
+    // long drag across a big screen is tiring when you are placing twelve.
+    row.draggable = true;
+    row.ondragstart = e => {
+      dragWin = { id: +row.dataset.id, app: row.querySelector('b')?.textContent || '' };
+      e.dataTransfer.setData('text/plain', String(dragWin.id));
+      e.dataTransfer.effectAllowed = 'copy';
+      say('drop it on a piece');
+    };
+    row.ondragend = () => { dragWin = null; dropTarget = null; };
     row.onclick = () => {
-      if (!selected) { say('select a piece first — use move, then click one'); return; }
+      if (!selected) { say('drag it onto a piece, or click a piece first'); return; }
       const p = layout.panes.find(q => q.id === selected);
       if (!p) return;
-      const id = +row.dataset.id;
-      if (!id) { p.source = null; p.name = ''; say('piece shows the screen again'); }
-      else {
-        const w = ws.find(x => x.id === id);
-        p.source = { t: 'window', id, app: w.app, title: w.title };
-        p.name = w.app;
-        feedFor(id);
-        say(`${w.app} → this piece`);
-      }
-      reapFeeds();
+      assignWindow(p.id, +row.dataset.id);
     };
   }
 }
+// One place where a window becomes a piece's content, used by both the
+// click path and the drop path.
+function assignWindow(paneId, winId) {
+  const p = layout.panes.find(q => q.id === paneId);
+  if (!p) return;
+  if (!winId) {
+    p.source = null; p.name = '';
+    say('piece shows the screen again');
+  } else {
+    const w = winList.find(x => x.id === winId) || { id: winId, app: 'window', title: '' };
+    p.source = { t: 'window', id: winId, app: w.app, title: w.title };
+    p.name = w.app;
+    feedFor(winId);
+    say(`${w.app} → this piece`);
+  }
+  reapFeeds();
+}
+
+cv.addEventListener('dragover', e => {
+  if (!dragWin) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  const [x, y] = toSheet(e.clientX, e.clientY);
+  const p = L.paneAt(layout, x, y);
+  dropTarget = p ? p.id : null;
+});
+cv.addEventListener('dragleave', () => { dropTarget = null; });
+cv.addEventListener('drop', e => {
+  e.preventDefault();
+  const id = +(e.dataTransfer.getData('text/plain') || 0);
+  const [x, y] = toSheet(e.clientX, e.clientY);
+  const p = L.paneAt(layout, x, y);
+  dragWin = null; dropTarget = null;
+  if (!p) { say('dropped outside the sheet'); return; }
+  selected = p.id;
+  assignWindow(p.id, id);
+});
+
 function closePicker() { picking = false; pick.classList.remove('on'); }
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -312,7 +382,7 @@ for (const b of document.querySelectorAll('[data-tool]')) {
     say(tool === 'cut' ? 'drag across the sheet to divide it'
       : tool === 'move' ? 'drag a piece — hold shift to move the frame but not the picture'
       : tool === 'delete' ? 'click a piece to remove it'
-      : `click to place a ${tool}`);
+      : `${tool} · ${(punchR * 200).toFixed(0)}% wide — scroll to resize, click to place`);
   };
 }
 
