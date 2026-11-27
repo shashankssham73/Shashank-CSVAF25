@@ -196,5 +196,18 @@ console.log('\ncarrying the picture');
   ok('the offset survives a round trip', near(back.panes[0].off[0], 0.2));
 }
 
+console.log('\ntools in pieces');
+{
+  const lay = L.newLayout();
+  const p = lay.panes[0];
+  p.source = { t:'tool', kind:'note', opts:{ text:'remember the milk' } };
+  const back = L.fromJSON(JSON.parse(JSON.stringify(L.toJSON(lay))));
+  ok('a tool survives a round trip', back.panes[0].source.kind === 'note');
+  ok('its text survives', back.panes[0].source.opts.text === 'remember the milk');
+  L.cutPane(lay, p.id, 0.5, 0, 0.5, 1);
+  ok('cutting a tool piece gives two of that tool',
+     lay.panes[0].source.kind === 'note' && lay.panes[1].source.kind === 'note');
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -10,6 +10,7 @@
 // turns the piece into a window onto a fixed image instead.
 
 import * as L from './cutlayout.js';
+import { TOOLS, TOOL_KEYS } from './cuttools.js';
 import { ScreenCapture, NativeFeed } from './capture.js';
 
 const cv = document.getElementById('sheet');
@@ -31,6 +32,7 @@ const FULL = { x: 0, y: 0, w: 1, h: 1 };
 const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v);
 // The piece being cropped, and the rectangle being dragged over its window.
 let cropping = null, cropDrag = null;
+let editingNote = null;
 
 const cap = new ScreenCapture();
 const nat = new NativeFeed();
@@ -40,6 +42,27 @@ const haveSource = () => src().ready;
 // One feed per window that some pane is showing — started on demand and
 // stopped when the last pane using it goes away, so a collage costs exactly
 // as many streams as it has distinct windows in it.
+// Machine telemetry, for any piece showing a meter. One subscription for
+// the page however many meters are on the sheet.
+const chanVals = Object.create(null);
+let chanOn = false;
+function chan(name) { return chanVals[name]; }
+function startTelemetry() {
+  if (chanOn) return;
+  chanOn = true;
+  try {
+    const es = new EventSource('/stream');
+    es.onmessage = e => {
+      try {
+        const d = JSON.parse(e.data);
+        if (d && d.v) Object.assign(chanVals, d.v);
+        else if (d) Object.assign(chanVals, d);
+      } catch (_) {}
+    };
+    es.onerror = () => {};
+  } catch (_) {}
+}
+
 const winFeeds = new Map();
 function feedFor(id) {
   let f = winFeeds.get(id);
@@ -106,8 +129,20 @@ function draw() {
     ctx.save();
     tracePoly(ctx, p.poly);
     ctx.clip();
+    const tool = p.source && p.source.t === 'tool' ? TOOLS[p.source.kind] : null;
     const wf = p.source && p.source.t === 'window' ? feedFor(p.source.id) : null;
-    if (wf && wf.ready) {
+    if (tool) {
+      const b = L.bbox(p.poly);
+      const box = { x: b.x * W, y: b.y * H, w: b.w * W, h: b.h * H };
+      ctx.fillStyle = `hsl(${hue} 30% 11%)`;
+      ctx.fillRect(box.x, box.y, box.w, box.h);
+      try {
+        tool.draw(ctx, box, p.source.opts || {}, {
+          t: performance.now() / 1000, dpr: DPR, chan, hue,
+          editing: editingNote === p.id,
+        });
+      } catch (_) { /* a broken tool must not take the sheet down */ }
+    } else if (wf && wf.ready) {
       // A window fills its own piece rather than being placed on the sheet:
       // you chose that window for that shape, so it should be framed by it.
       // A crop narrows that to part of the window — one column, one panel,
@@ -151,7 +186,19 @@ function draw() {
       ctx.font = `${11 * DPR}px ui-monospace, Menlo, monospace`;
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(255,190,110,0.9)';
-      ctx.fillText(wf.suspended ? 'hidden — bring that window forward' : 'opening…', px, py);
+      // Precise, not hopeful. macOS stops drawing a window that is entirely
+      // covered, so there is no content to capture — "bring it forward"
+      // suggested a fix that does not exist while the sheet covers it.
+      const b2 = L.bbox(p.poly);
+      ctx.font = `${Math.max(9, Math.min(13, b2.w * W / 26 / DPR)) * DPR}px ui-monospace, Menlo, monospace`;
+      ctx.fillText(wf.suspended
+        ? `${(p.source && p.source.app) || 'that window'} is covered`
+        : 'opening…', px, py);
+      if (wf.suspended) {
+        ctx.font = `${9 * DPR}px ui-monospace, Menlo, monospace`;
+        ctx.fillStyle = 'rgba(160,185,200,0.75)';
+        ctx.fillText('macOS stops drawing covered windows', px, py + 16 * DPR);
+      }
     } else if (p.name) {
       const [cx, cy] = L.centroid(p.poly);
       const [px, py] = toPx(cx, cy);
@@ -298,7 +345,14 @@ cv.addEventListener('pointerdown', e => {
   // With the picker open, a click selects rather than cuts: you are aiming
   // at a piece, not making a new one.
   if (picking) { if (p) { selected = p.id; say(`piece selected — now click a window`); } return; }
-  if (tool === 'use') { poke('click', e.clientX * DPR, e.clientY * DPR); return; }
+  if (tool === 'use') {
+    if (p && p.source && p.source.t === 'tool') {
+      if (p.source.kind === 'note') { selected = p.id; editingNote = p.id; say('type — escape when done'); }
+      else say(`${TOOLS[p.source.kind]?.title || 'tool'} — nothing to click`);
+      return;
+    }
+    poke('click', e.clientX * DPR, e.clientY * DPR); return;
+  }
   if (tool === 'cut') { drag = { kind: 'cut', a: [x, y], b: [x, y] }; return; }
   if (tool === 'move') {
     if (!p) return;
@@ -446,12 +500,34 @@ async function openPicker() {
                    + `<div class="perr">${String(e.message || e)}</div>`;
     return;
   }
-  pick.innerHTML = '<div class="ph">click a piece, then a window</div>'
+  const anyHidden = ws.some(w => !w.onScreen);
+  pick.innerHTML = '<div class="ph">drag one onto a piece</div>'
+    + (anyHidden ? '<div class="pnote">windows marked <b>covered</b> are not being '
+        + 'drawn by macOS, so they capture as nothing. Un-maximise this window, or '
+        + 'move that one so part of it shows.</div>' : '')
     + '<div class="prow none" data-id="0">— the screen underneath —</div>'
+    + '<div class="ph">tools</div>'
+    + TOOL_KEYS.map(k => `<div class="prow tool" data-tool="${k}">`
+        + `<b>${TOOLS[k].title}</b><span class="pdim">${esc(TOOLS[k].hint)}</span></div>`).join('')
+    + '<div class="ph">windows</div>'
     + ws.map(w => `<div class="prow${w.onScreen ? '' : ' off'}" data-id="${w.id}">`
         + `<b>${esc(w.app)}</b>${w.title ? ' · ' + esc(w.title.slice(0, 42)) : ''}`
-        + `<span class="pdim">${w.w}×${w.h}${w.onScreen ? '' : ' · hidden'}</span></div>`).join('');
-  for (const row of pick.querySelectorAll('.prow')) {
+        + `<span class="pdim">${w.w}×${w.h}${w.onScreen ? '' : ' · covered'}</span></div>`).join('');
+  for (const row of pick.querySelectorAll('.prow[data-tool]')) {
+    row.draggable = true;
+    row.ondragstart = e => {
+      dragWin = { tool: row.dataset.tool };
+      e.dataTransfer.setData('text/plain', 'tool:' + row.dataset.tool);
+      e.dataTransfer.effectAllowed = 'copy';
+      say('drop it on a piece');
+    };
+    row.ondragend = () => { dragWin = null; dropTarget = null; };
+    row.onclick = () => {
+      if (!selected) { say('drag it onto a piece, or click a piece first'); return; }
+      assignTool(selected, row.dataset.tool);
+    };
+  }
+  for (const row of pick.querySelectorAll('.prow[data-id]')) {
     // Dragging is the gesture that matches the metaphor: you pick a window
     // up and drop it into a hole you cut. Clicking still works, because a
     // long drag across a big screen is tiring when you are placing twelve.
@@ -473,6 +549,18 @@ async function openPicker() {
 }
 // One place where a window becomes a piece's content, used by both the
 // click path and the drop path.
+function assignTool(paneId, kind) {
+  const p = layout.panes.find(q => q.id === paneId);
+  if (!p || !TOOLS[kind]) return;
+  p.source = { t: 'tool', kind, opts: kind === 'note' ? { text: '' } : {} };
+  if (kind === 'clock') p.source.opts = { seconds: true };
+  p.name = '';
+  if (kind === 'meter') startTelemetry();
+  if (kind === 'note') { editingNote = paneId; say('type — the text is saved with the layout'); }
+  else say(`${TOOLS[kind].title} → this piece`);
+  reapFeeds();
+}
+
 function assignWindow(paneId, winId) {
   const p = layout.panes.find(q => q.id === paneId);
   if (!p) return;
@@ -500,13 +588,14 @@ cv.addEventListener('dragover', e => {
 cv.addEventListener('dragleave', () => { dropTarget = null; });
 cv.addEventListener('drop', e => {
   e.preventDefault();
-  const id = +(e.dataTransfer.getData('text/plain') || 0);
+  const raw = e.dataTransfer.getData('text/plain') || '';
   const [x, y] = toSheet(e.clientX, e.clientY);
   const p = L.paneAt(layout, x, y);
   dragWin = null; dropTarget = null;
   if (!p) { say('dropped outside the sheet'); return; }
   selected = p.id;
-  assignWindow(p.id, id);
+  if (raw.startsWith('tool:')) assignTool(p.id, raw.slice(5));
+  else assignWindow(p.id, +raw);
 });
 
 function closePicker() { picking = false; pick.classList.remove('on'); }
@@ -563,7 +652,10 @@ $('#load').onclick = async () => {
     selected = null;
     // Open the windows the layout asks for, rather than waiting for the
     // first frame to notice they are missing.
-    for (const p of layout.panes) if (p.source && p.source.t === 'window') feedFor(p.source.id);
+    for (const p of layout.panes) {
+      if (p.source && p.source.t === 'window') feedFor(p.source.id);
+      if (p.source && p.source.t === 'tool' && p.source.kind === 'meter') startTelemetry();
+    }
     reapFeeds();
     const wins = layout.panes.filter(p => p.source && p.source.t === 'window').length;
     say(`loaded ${layout.panes.length} pieces${wins ? `, ${wins} with windows` : ''}`);
@@ -573,6 +665,19 @@ $('#load').onclick = async () => {
 addEventListener('keydown', e => {
   if (e.key === 'Backspace' || e.key === 'Delete') {
     if (selected && L.removePane(layout, selected)) { selected = null; say('removed a piece'); }
+  }
+  // A note is the one piece that takes the keyboard, so it claims it fully
+  // while being edited — otherwise 'c' would start a crop mid-sentence.
+  if (editingNote) {
+    const p = layout.panes.find(q => q.id === editingNote);
+    if (!p || !p.source || p.source.kind !== 'note') { editingNote = null; return; }
+    const o = p.source.opts || (p.source.opts = { text: '' });
+    if (e.key === 'Escape' || e.key === 'Enter') { editingNote = null; say('note kept'); }
+    else if (e.key === 'Backspace') o.text = o.text.slice(0, -1);
+    else if (e.key.length === 1) o.text += e.key;
+    else return;
+    e.preventDefault();
+    return;
   }
   if (cropping) {
     if (e.key === 'Enter') endCrop(true);
@@ -600,6 +705,7 @@ window.papercut = {
   punch: (kind, x, y, r = 0.13) =>
     L.punch(layout, PUNCH[kind](x, y, r, W / H), kind),
   feed: id => feedFor(id),
+  tool: (paneId, kind) => assignTool(paneId, kind),
 };
 
 draw();

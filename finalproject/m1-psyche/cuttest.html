@@ -1,39 +1,31 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Paper Cut — visual test</title>
 <!-- Same origin as the page under test, so the layout can be driven directly.
-     Geometry is far easier to check by looking than by asserting: the Node
-     tests prove area is conserved, this proves it is DRAWN where it should
-     be. -->
+     Geometry and tools are far easier to check by looking than by asserting:
+     the Node tests prove area is conserved and that a tool round-trips, this
+     proves both are DRAWN where they should be.
+     No window feeds here on purpose — they long-poll, which keeps a headless
+     render from ever settling. -->
 <style>html,body{margin:0;background:#0a0d14}iframe{border:0;display:block}</style>
 </head><body>
-<iframe id="f" src="/m1/papercut.html" width="1280" height="720"></iframe>
+<iframe id="f" src="/m1/papercut.html" width="1280" height="700"></iframe>
 <script>
 const f = document.getElementById('f');
 f.onload = () => setTimeout(() => {
   const pc = f.contentWindow.papercut;
   if (!pc) { document.title = 'FAILED: no papercut handle'; return; }
-  pc.cut(0.38, 0, 0.30, 1);
-  pc.cut(0, 0.44, 1, 0.52);
-  pc.cut(0.70, 0.52, 0.86, 1);
-  pc.punch('hexagon', 0.55, 0.30, 0.11);
-  pc.punch('star',    0.20, 0.72, 0.10);
-  pc.punch('circle',  0.84, 0.26, 0.09);
-  // Stage two: put real windows into the pieces.
-  fetch('/windows').then(r => r.json()).then(j => {
-    const ws = (j.windows || []).filter(w => w.onScreen).slice(0, 2);
-    const panes = pc.layout.panes.filter(p => !p.placed);
-    ws.forEach((w, i) => {
-      const p = panes[i];
-      if (!p) return;
-      p.source = { t: 'window', id: w.id, app: w.app, title: w.title };
-      p.name = w.app;
-      f.contentWindow.papercut.feed(w.id);
-    });
-    document.title = `${ws.length} windows placed`;
-  });
-  const n = pc.layout.panes.length;
-  const area = pc.layout.panes.reduce((s,p)=>s+Math.abs(pc.L.area(p.poly)),0);
-  document.title = `${n} pieces, ${(area*100).toFixed(2)}% of the sheet`;
+  pc.cut(0.34, 0, 0.30, 1);
+  pc.cut(0, 0.40, 1, 0.46);
+  pc.cut(0.68, 0.46, 0.78, 1);
+  pc.punch('hexagon', 0.52, 0.70, 0.10);
+
+  const panes = pc.layout.panes;
+  pc.tool(panes[0].id, 'clock');
+  pc.tool(panes[1].id, 'fill');   // not the meter: it opens an SSE stream and headless never settles
+  pc.tool(panes[2].id, 'note');
+  if (panes[3]) pc.tool(panes[3].id, 'fill');
+  const n = panes.filter(p => p.source && p.source.t === 'tool').length;
+  document.title = `${panes.length} pieces, ${n} tools`;
 }, 500);
 </script>
 </body></html>

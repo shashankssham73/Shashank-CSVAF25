@@ -47,7 +47,14 @@
   #pick .prow b { color:#fff; font-weight:400; }
   #pick .prow.off { color:var(--dim); }
   #pick .prow.none { color:var(--ok); }
+  #pick .prow.tool b { color:#9fd0ee; }
+  #pick .prow.tool .pdim { float:none; display:block; padding:1px 0 0; }
+  #pick .prow.tool { white-space:normal; }
+  #help i { color:#9fd0ee; font-style:normal; }
   #pick .pdim { color:var(--dim); float:right; padding-left:10px; }
+  #pick .pnote { padding:8px 12px; color:#ffbe6e; line-height:1.55;
+                 border-bottom:1px solid var(--line); white-space:normal; }
+  #pick .pnote b { color:#ffd9a8; font-weight:400; }
 </style>
 </head>
 <body>
@@ -86,7 +93,8 @@
 <div id="help">
   <b>slice</b> drag a line across the sheet — every piece it crosses is cut<br>
   <b>shapes</b> scroll to size, click to place<br>
-  <b>windows…</b> drag one onto a piece, or click a piece then a window<br>
+  <b>windows…</b> drag a window <i>or a tool</i> onto a piece<br>
+  <b>tools</b> clock · meter · note · fill — a piece need not be a window<br>
   <b>move</b> drag a piece; it takes its picture with it.<br>
   hold <b>shift</b> to move the frame and leave the picture<br>
   <b>crop</b> select a piece with a window, press <b>c</b>, drag a rectangle<br>
