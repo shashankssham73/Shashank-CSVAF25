@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paper Cut</title>
+<style>
+  :root { --line:#243040; --dim:#7d94a4; --fg:#cfe0ea; --accent:#c77fa8; --ok:#7fe0b8; }
+  html, body { margin:0; padding:0; height:100%; background:#0a0d14; overflow:hidden; }
+  canvas { display:block; position:fixed; inset:0; }
+  #bar { position:fixed; left:14px; top:14px; z-index:10; display:flex; flex-wrap:wrap;
+         gap:6px; align-items:center; max-width:calc(100% - 28px);
+         font:11.5px ui-monospace, Menlo, monospace; }
+  #bar button { background:rgba(16,22,30,0.9); color:var(--fg); cursor:pointer;
+                border:1px solid rgba(80,110,140,0.55); border-radius:5px;
+                padding:5px 11px; font:inherit; backdrop-filter:blur(8px); }
+  #bar button:hover { border-color:var(--accent); color:#fff; }
+  #bar button.on { border-color:var(--accent); color:#f0d2e4; background:rgba(50,24,42,0.85); }
+  #bar .gap { width:10px; }
+  #bar .lbl { color:var(--dim); letter-spacing:.1em; text-transform:uppercase;
+              font-size:9px; padding-right:2px; }
+  #bar .src button { border-color:rgba(130,160,220,0.5); color:#9db8e8; }
+  #bar .src button.on { background:rgba(24,38,72,0.85); border-color:#6f9fe8; }
+  /* Bottom right, not top right: the toolbar wraps to a second row on a
+     narrow window and the two were overlapping. */
+  #help { position:fixed; right:14px; bottom:14px; z-index:10; max-width:30ch;
+          font:10.5px/1.6 ui-monospace, Menlo, monospace; color:var(--dim);
+          background:rgba(13,17,23,0.88); border:1px solid var(--line);
+          border-radius:7px; padding:9px 12px; backdrop-filter:blur(8px); }
+  #help b { color:var(--fg); font-weight:400; }
+</style>
+</head>
+<body>
+<canvas id="sheet"></canvas>
+
+<div id="bar">
+  <span class="lbl">cut</span>
+  <button data-tool="cut" class="on">slice</button>
+  <button data-tool="circle">circle</button>
+  <button data-tool="hexagon">hexagon</button>
+  <button data-tool="triangle">triangle</button>
+  <button data-tool="star">star</button>
+  <button data-tool="square">square</button>
+  <span class="gap"></span>
+  <span class="lbl">edit</span>
+  <button data-tool="move">move</button>
+  <button data-tool="delete">remove</button>
+  <button id="reset">whole sheet</button>
+  <span class="gap"></span>
+  <span class="lbl">source</span>
+  <span class="src">
+    <button id="bnative">whole screen</button>
+    <button id="blive">capture my screen</button>
+    <button id="bmock">none</button>
+  </span>
+  <span class="gap"></span>
+  <button id="save">save layout</button>
+  <button id="load">load layout</button>
+</div>
+
+<div id="help">
+  <b>slice</b> drag a line across the sheet — every piece it crosses is cut<br>
+  <b>shapes</b> click to punch a piece out<br>
+  <b>move</b> drag a piece; it takes its picture with it.<br>
+  hold <b>shift</b> to move the frame and leave the picture<br>
+  <b>]</b> bring to front · <b>delete</b> remove the selected piece
+</div>
+
+<script type="module" src="./papercut.js"></script>
+</body>
+</html>

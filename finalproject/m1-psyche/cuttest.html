@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Paper Cut — visual test</title>
+<!-- Same origin as the page under test, so the layout can be driven directly.
+     Geometry is far easier to check by looking than by asserting: the Node
+     tests prove area is conserved, this proves it is DRAWN where it should
+     be. -->
+<style>html,body{margin:0;background:#0a0d14}iframe{border:0;display:block}</style>
+</head><body>
+<iframe id="f" src="/m1/papercut.html" width="1280" height="720"></iframe>
+<script>
+const f = document.getElementById('f');
+f.onload = () => setTimeout(() => {
+  const pc = f.contentWindow.papercut;
+  if (!pc) { document.title = 'FAILED: no papercut handle'; return; }
+  pc.cut(0.38, 0, 0.30, 1);
+  pc.cut(0, 0.44, 1, 0.52);
+  pc.cut(0.70, 0.52, 0.86, 1);
+  pc.punch('hexagon', 0.55, 0.30, 0.11);
+  pc.punch('star',    0.20, 0.72, 0.10);
+  pc.punch('circle',  0.84, 0.26, 0.09);
+  const n = pc.layout.panes.length;
+  const area = pc.layout.panes.reduce((s,p)=>s+Math.abs(pc.L.area(p.poly)),0);
+  document.title = `${n} pieces, ${(area*100).toFixed(2)}% of the sheet`;
+}, 500);
+</script>
+</body></html>

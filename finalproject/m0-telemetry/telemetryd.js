@@ -828,6 +828,39 @@ const handler = (req, res) => {
   // The visualizer's signal routing lives in patch.json rather than in code.
   // Saving from the patcher broadcasts to every open client, so edits apply
   // to a running visualizer without a reload.
+  // ---- paper cut layouts -----------------------------------------------
+  // One file, same shape as the patch route: a layout is small, and keeping
+  // it on disk rather than in the browser means it survives a reload and can
+  // be read by anything else that wants to know how the sheet is cut.
+  if (url.pathname === '/papercut') {
+    const pf = path.join(ROOT, '..', 'm1-psyche', 'papercut.json');
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', d => { body += d; if (body.length > 2e6) req.destroy(); });
+      req.on('end', () => {
+        try {
+          const j = JSON.parse(body);
+          if (!j || !Array.isArray(j.panes) || !j.panes.length) throw new Error('not a layout');
+          fs.writeFileSync(pf, JSON.stringify(j));
+          res.writeHead(200, { 'Content-Type':'application/json' });
+          res.end(JSON.stringify({ saved:true, panes:j.panes.length }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type':'application/json' });
+          res.end(JSON.stringify({ error:String(e.message || e) }));
+        }
+      });
+      return;
+    }
+    if (!fs.existsSync(pf)) {
+      res.writeHead(404, { 'Content-Type':'application/json', 'Cache-Control':'no-store' });
+      res.end(JSON.stringify({ error:'no layout saved yet' }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type':'application/json', 'Cache-Control':'no-store' });
+    res.end(fs.readFileSync(pf));
+    return;
+  }
+
   if (url.pathname === '/patch' || url.pathname === '/m1/patch') {
     const pf = url.pathname === '/m1/patch'
       ? path.join(ROOT, '..', 'm1-psyche', 'psyche.json')
