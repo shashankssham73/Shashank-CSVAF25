@@ -69,7 +69,7 @@ function buildNode(n) {
 
   op.ins.forEach((p, i) => {
     const dot = document.createElement('div');
-    dot.className = 'port in' + (p.shape ? ' shape' : p.seltype ? ' seltype' : '');
+    dot.className = 'port in' + (p.shape ? ' shape' : p.seltype ? ' seltype' : p.img ? ' imgtype' : '');
     dot.dataset.dir = 'in'; dot.dataset.i = i; dot.dataset.id = n.id;
     dot.style.top = (portY(i) - 5.5) + 'px';
     const lab = document.createElement('div');
@@ -79,7 +79,7 @@ function buildNode(n) {
   });
   op.outs.forEach((p, i) => {
     const dot = document.createElement('div');
-    dot.className = 'port out' + (p.shape ? ' shape' : p.seltype ? ' seltype' : '');
+    dot.className = 'port out' + (p.shape ? ' shape' : p.seltype ? ' seltype' : p.img ? ' imgtype' : '');
     dot.dataset.dir = 'out'; dot.dataset.i = i; dot.dataset.id = n.id;
     dot.style.top = (portY(i) - 5.5) + 'px';
     const lab = document.createElement('div');
@@ -296,7 +296,8 @@ function drawWires() {
     const src = graph.nodes.get(e.from);
     const col = src ? OPS[src.type].color : '#5c6670';
     const op = src && OPS[src.type].outs[e.fo];
-    const cls = op && op.shape ? 'shapewire' : op && op.seltype ? 'selwire' : '';
+    const cls = op && op.shape ? 'shapewire' : op && op.seltype ? 'selwire'
+              : op && op.img ? 'imgwire' : '';
     const d = wirePath(a, b);
     h += `<path class="${cls}" d="${d}" stroke="${col}" opacity="0.75"/>`
        + `<path class="hit" d="${d}" data-to="${e.to}" data-ti="${e.ti}"/>`;

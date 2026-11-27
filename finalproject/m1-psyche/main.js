@@ -32,6 +32,7 @@ import { axScene } from './semantic.js';
 import { applyStack, identity, applySurfaceStack, surfIdentity } from './modulate.js';
 import { drawChrome, drawGlyphs, drawScene, makeMeasurer, PAL, FONT } from './render.js';
 import { ImageChain } from './chain.js';
+import { ImageGraph } from './imagegraph.js';
 import { ScreenCapture, NativeFeed } from './capture.js';
 import { TileLayer } from './tilelayer.js';
 import { matches } from '../m0-telemetry/patch/selection.js';
@@ -210,6 +211,7 @@ let tree = null, treeErr = '', treePath = '~/Documents', treeLoading = false;
 let ax = null, axErr = '', axAt = 0, axBusy = false, axHeld = false, axApp = '';
 let lastWet = 0, repaintSrc = null;     // so the source bar can report the chain
 let lastAdvice = '';
+let imageGraph = null;
 let lastGlyphs = [];
 let reachAt = 0;
 
@@ -536,7 +538,12 @@ function tick(now) {
   // --- dry: the crisp, usable desktop ------------------------------------
   // Drawn directly rather than through the raster, so at mix 0 the text is
   // exactly as sharp as if none of the chain existed.
-  if (wet < 0.998) {
+  // A patched image chain composites OVER the desktop rather than crossfading
+  // against it, so the dry pass is skipped only when the image covers it
+  // completely — otherwise the untouched screen is what shows through, and
+  // that is what keeps text readable at a partial mix.
+  const imgCovers = !!(G.$image && G.$image.mix > 0.998);
+  if (wet < 0.998 && !imgCovers) {
     ctx.save();
     ctx.globalAlpha = 1 - wet;
     if (tiled) paintSource(ctx, W, H, PAL.wall);
@@ -552,7 +559,26 @@ function tick(now) {
   // The raster is filled black, not with the wall colour: the scan processor
   // skips anything below scan.floor, so a black ground costs nothing while a
   // near-black one would stroke a faint scanline across the whole frame.
-  if (wet > 0.002) {
+  // A patched image chain takes over from the built-in pipeline. When there
+  // is none — which is all 13 presets and every patch written so far — the
+  // fixed pipeline runs exactly as before, so nothing that worked stops.
+  if (G.$image) {
+    const ig = imageGraph || (imageGraph = new ImageGraph(chain));
+    chain.scan.col.configure(G.$color);
+    const outCv = ig.render(G.$image.d, (c, w, h) => paintSource(c, w, h, '#000'), T);
+    const m = Math.min(1, Math.max(0, G.$image.mix));
+    if (outCv && m > 0.002) {
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = m;
+      // Letterboxed, never stretched: the raster is 1.6 and a display is not.
+      const k2 = Math.min(W / ig.w, H / ig.h);
+      const dw = ig.w * k2, dh = ig.h * k2;
+      ctx.drawImage(outCv, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      ctx.restore();
+    }
+    if (outCv) ig.give(outCv);
+  } else if (wet > 0.002) {
     chain.render((c, w, h) => paintSource(c, w, h, '#000'), G, ctx, W, H, wet, T);
   }
 

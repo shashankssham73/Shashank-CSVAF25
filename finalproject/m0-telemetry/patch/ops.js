@@ -23,6 +23,7 @@ import { TEXT_OPS, TEXT_CATS } from './textops.js';
 import { LAYOUT_OPS, LAYOUT_CATS } from './layoutops.js';
 import { BOT_OPS, BOT_CATS } from './botops.js';
 import { SELECT_OPS, SELECT_CATS, SEL_IN } from './selectops.js';
+import { IMAGE_OPS, IMAGE_CATS } from './imageops.js';
 import { READ_OPS, READ_CATS } from './readops.js';
 
 export const CHANNELS = [
@@ -401,11 +402,12 @@ function withSelection(ops) {
 }
 
 export const OPS = { ...CORE_OPS, ...SHAPE_OPS, ...DRAW_OPS, ...READ_OPS, ...SELECT_OPS,
+                     ...IMAGE_OPS,
                      ...withSelection(TEXT_OPS), ...withSelection(LAYOUT_OPS),
                      ...BOT_OPS };
 
 export const CATS = [
-  ...READ_CATS, ...SELECT_CATS,
+  ...READ_CATS, ...SELECT_CATS, ...IMAGE_CATS,
   ['source','Sources'], ['math','Math & shaping'], ['combine','Combine'],
   ['filter','Filters & envelopes'], ['dsp','DSP'],
   ...DRAW_CATS,

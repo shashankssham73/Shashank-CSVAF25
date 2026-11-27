@@ -40,16 +40,18 @@ export class Graph {
   // Null after a successful connection.
   lastRefusal = null;
 
-  // Two values travel on wires: numbers and shapes (distance fields). They
-  // are not interchangeable, and a shape arriving at a numeric input would
-  // read as "no input" with no visible error at all — so refuse it here
-  // rather than let someone spend an hour on a silently dead patch.
+  // Four values travel on wires: numbers, shapes (distance fields),
+  // selections (which elements) and images (a picture, described rather than
+  // carried). They are not interchangeable, and a shape arriving at a
+  // numeric input would read as "no input" with no visible error at all — so
+  // refuse it here rather than let someone spend an hour on a silently dead
+  // patch.
   portType(nodeId, dir, i) {
     const n = this.nodes.get(nodeId);
     if (!n) return null;
     const op = OPS[n.type];
     const p = op && (dir === 'out' ? op.outs[i] : op.ins[i]);
-    return p ? (p.shape ? 'shape' : p.seltype ? 'sel' : 'num') : null;
+    return p ? (p.shape ? 'shape' : p.seltype ? 'sel' : p.img ? 'image' : 'num') : null;
   }
 
   // One source per input port: connecting replaces whatever was there.
@@ -59,10 +61,15 @@ export class Graph {
     const a = this.portType(from, 'out', fo), b = this.portType(to, 'in', ti);
     if (!a || !b) { this.lastRefusal = 'that port does not exist'; return false; }
     if (a !== b) {
-      const name = { shape:'a shape', sel:'a selection', num:'a number' };
+      const name = { shape:'a shape', sel:'a selection', num:'a number', image:'an image' };
+      // The hint names the port SHAPE, because that is what you can see on
+      // the canvas — the refusal is only useful if it tells you what to look
+      // for next time.
+      const hint = { sel:' — selection ports are diamonds',
+                     shape:' — shape ports are square',
+                     image:' — image ports are wide bars' };
       this.lastRefusal = `${name[a]} cannot drive ${name[b]} input`
-        + (a === 'sel' || b === 'sel' ? ' — selection ports are diamonds' : '')
-        + (a === 'shape' || b === 'shape' ? ' — shape ports are square' : '');
+        + (hint[a] || hint[b] || '');
       return false;
     }
     this.edges = this.edges.filter(e => !(e.to === to && e.ti === ti));

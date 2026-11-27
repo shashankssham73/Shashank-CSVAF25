@@ -1,0 +1,182 @@
+{
+ "name": "patched bloom",
+ "saved": "2026-11-27T06:36:46.389364Z",
+ "note": "Built from image blocks rather than the fixed pipeline. The source is taken twice \u2014 sharp, and blurred on a slow breath \u2014 screen-blended back together, then scanned, coloured and fed back. Any source.",
+ "graph": {
+  "v": 1,
+  "nodes": [
+   {
+    "id": "pb1",
+    "type": "img.source",
+    "x": 60,
+    "y": 200,
+    "p": {
+     "what": "screen"
+    }
+   },
+   {
+    "id": "pb2",
+    "type": "img.blur",
+    "x": 340,
+    "y": 340,
+    "p": {
+     "r": 20
+    }
+   },
+   {
+    "id": "pb3",
+    "type": "img.blend",
+    "x": 620,
+    "y": 200,
+    "p": {
+     "t": 0.85,
+     "mode": "screen"
+    }
+   },
+   {
+    "id": "pb4",
+    "type": "img.scan",
+    "x": 900,
+    "y": 200,
+    "p": {
+     "amp": 34,
+     "persp": 0.35,
+     "key": 0.06,
+     "rowStep": 1,
+     "density": 0.055
+    }
+   },
+   {
+    "id": "pb5",
+    "type": "img.colour",
+    "x": 1180,
+    "y": 200,
+    "p": {
+     "amt": 1,
+     "key": 0.05
+    }
+   },
+   {
+    "id": "pb6",
+    "type": "img.feedback",
+    "x": 1460,
+    "y": 200,
+    "p": {
+     "gain": 0.93,
+     "zoom": 1.0025,
+     "rot": 0.0006
+    }
+   },
+   {
+    "id": "pb7",
+    "type": "img.out",
+    "x": 1740,
+    "y": 200,
+    "p": {
+     "mix": 0.8
+    }
+   },
+   {
+    "id": "pb8",
+    "type": "lfo",
+    "x": 340,
+    "y": 560,
+    "p": {
+     "f": 0.035,
+     "shape": "sine",
+     "amp": 1,
+     "off": 0
+    }
+   },
+   {
+    "id": "pb9",
+    "type": "remap",
+    "x": 620,
+    "y": 560,
+    "p": {
+     "il": -1,
+     "ih": 1,
+     "ol": 3,
+     "oh": 38,
+     "cl": "on"
+    }
+   },
+   {
+    "id": "pb10",
+    "type": "col.ramp",
+    "x": 1180,
+    "y": 560,
+    "p": {
+     "c0": "#02000a",
+     "p0": 0,
+     "c1": "#2a1b8f",
+     "p1": 0.3,
+     "c2": "#ff4d9d",
+     "p2": 0.66,
+     "c3": "#fff0c0",
+     "p3": 1,
+     "off": 0,
+     "g": 1,
+     "hue": 0,
+     "alpha": 1
+    }
+   }
+  ],
+  "edges": [
+   {
+    "from": "pb1",
+    "fo": 0,
+    "to": "pb2",
+    "ti": 0
+   },
+   {
+    "from": "pb1",
+    "fo": 0,
+    "to": "pb3",
+    "ti": 0
+   },
+   {
+    "from": "pb2",
+    "fo": 0,
+    "to": "pb3",
+    "ti": 1
+   },
+   {
+    "from": "pb3",
+    "fo": 0,
+    "to": "pb4",
+    "ti": 0
+   },
+   {
+    "from": "pb4",
+    "fo": 0,
+    "to": "pb5",
+    "ti": 0
+   },
+   {
+    "from": "pb5",
+    "fo": 0,
+    "to": "pb6",
+    "ti": 0
+   },
+   {
+    "from": "pb6",
+    "fo": 0,
+    "to": "pb7",
+    "ti": 0
+   },
+   {
+    "from": "pb8",
+    "fo": 0,
+    "to": "pb9",
+    "ti": 0
+   },
+   {
+    "from": "pb9",
+    "fo": 0,
+    "to": "pb2",
+    "ti": 1
+   }
+  ]
+ }
+}

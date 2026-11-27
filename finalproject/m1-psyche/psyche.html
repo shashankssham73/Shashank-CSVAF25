@@ -104,7 +104,16 @@ canvas.scope{display:block;margin:4px 8px 8px;background:#10141a;border:1px soli
 .port.seltype{border-radius:2px;transform:rotate(45deg);background:#4a3a1e;
   border-color:#d09a4a;width:11px;height:11px}
 .port.seltype:hover,.port.seltype.live{background:#d09a4a;border-color:#f0c070}
+/* Image ports are wide bars — a picture is neither a number nor a shape, and
+   the port has to say so at a glance. Deliberately the widest of the four. */
+.port.imgtype{border-radius:2px;background:#1e2f45;border-color:#5f8fd0;
+  width:18px;height:9px}
+.port.imgtype:hover,.port.imgtype.live{background:#5f8fd0;border-color:#9fc4ee}
 #wires path.selwire{stroke-width:2.6;stroke-dasharray:7 3}
+/* An image wire carries a whole picture, so it is the heaviest line on the
+   canvas — you should be able to trace the chain across the patch at a
+   glance, past everything else going on. */
+#wires path.imgwire{stroke-width:3.4;stroke:#5f8fd0;opacity:0.85}
 
 /* colour parameter */
 .prm.colr input[type=color]{width:100%;height:18px;padding:0;background:#12161a;

@@ -229,6 +229,35 @@ export const OPGUIDE = {
   what: 'Maps brightness onto a gradient: dark pixels take the first colour, bright ones the last, everything else blends between.',
   use:  'The quickest way to change the entire mood. The same effect in deep blue and in hot magenta feels like two different pieces of software.' },
 
+// --------------------------------------------------- image: the picture itself
+'img.source': {
+  what: 'The picture the chain starts from — whatever you are looking at, handed over as something you can wire.',
+  use:  'Split it two ways and treat the halves differently: one sharp, one blurred, blended back together. That is a glow, and it is three blocks.' },
+'img.scan': {
+  what: 'Pushes every row of the picture sideways by how bright it is, so a flat image stands up into a relief.',
+  use:  'This is the look of 1970s analogue video synthesis. A bright window becomes a ridge; dark areas stay put.' },
+'img.feedback': {
+  what: 'Draws each frame on top of the last one, slightly bigger and slightly turned.',
+  use:  'Where trails come from. At 0.94 movement smears; above 0.99 nothing ever fades and your cursor paints permanent light.' },
+'img.rd': {
+  what: 'A chemistry simulation — two substances, one eating the other — seeded by your picture.',
+  use:  'Your screen dissolves into coral, worms or drifting blobs. The regime block next door picks a recipe that is known to work, because the usable numbers are a very narrow band.' },
+'img.blur': {
+  what: 'Softens the picture.',
+  use:  'Rarely the point on its own. Blur a copy, blend it back over the sharp one, and you have a bloom around everything bright.' },
+'img.levels': {
+  what: 'Brightness, contrast, gamma and a black floor.',
+  use:  'The floor is the one that matters: lifting it off zero leaves a faint haze over the whole screen, and dropping it to zero is the difference between murky and clean.' },
+'img.colour': {
+  what: 'Repaints the picture through a gradient or a set of colour bands.',
+  use:  'The quickest way to change the entire mood. The same effect in deep blue and in hot magenta reads as two different pieces of software.' },
+'img.blend': {
+  what: 'Combines two pictures — mix, add, multiply, screen or difference.',
+  use:  'This is what makes the image chain a graph instead of a line. Difference between a frame and its blurred self is an edge detector you built from two blocks.' },
+'img.out': {
+  what: 'The end of an image chain. Everything before it is a description; this is what puts it on screen.',
+  use:  'Its mix dial does for your chain what chain.mix does for the built-in one: at 0.4 the real desktop shows through underneath and text stays readable.' },
+
 // ----------------------------------------------------------------- typography
 'txt.wave': {
   what: 'Makes letters ride a wave, bobbing up and down or side to side.',
