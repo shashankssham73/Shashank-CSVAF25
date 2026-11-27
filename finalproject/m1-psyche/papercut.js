@@ -29,6 +29,29 @@ const nat = new NativeFeed();
 const src = () => (nat.active ? nat : cap);
 const haveSource = () => src().ready;
 
+// One feed per window that some pane is showing — started on demand and
+// stopped when the last pane using it goes away, so a collage costs exactly
+// as many streams as it has distinct windows in it.
+const winFeeds = new Map();
+function feedFor(id) {
+  let f = winFeeds.get(id);
+  if (!f) {
+    f = new NativeFeed(id);
+    winFeeds.set(id, f);
+    f.start({ fps: 20, width: 900 }).then(ok => {
+      if (!ok) say('could not open that window: ' + (f.error || 'unknown'));
+    });
+  }
+  return f;
+}
+function reapFeeds() {
+  const used = new Set(layout.panes.filter(p => p.source && p.source.t === 'window')
+                                   .map(p => p.source.id));
+  for (const [id, f] of winFeeds) {
+    if (!used.has(id)) { f.stop(); winFeeds.delete(id); }
+  }
+}
+
 // ------------------------------------------------------------------ canvas
 function resize() {
   DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -75,7 +98,16 @@ function draw() {
     ctx.save();
     tracePoly(ctx, p.poly);
     ctx.clip();
-    if (ready) {
+    const wf = p.source && p.source.t === 'window' ? feedFor(p.source.id) : null;
+    if (wf && wf.ready) {
+      // A window fills its own piece rather than being placed on the sheet:
+      // you chose that window for that shape, so it should be framed by it.
+      const b = L.bbox(p.poly);
+      const [bw, bh] = [b.w * W, b.h * H];
+      const s = Math.max(bw / wf.w, bh / wf.h);          // cover, not contain
+      const dw = wf.w * s, dh = wf.h * s;
+      ctx.drawImage(wf.bmp, b.x * W + (bw - dw) / 2, b.y * H + (bh - dh) / 2, dw, dh);
+    } else if (ready) {
       // The offset is what makes a piece a cut-out: it samples the picture
       // from where the piece came from, not from where it now sits.
       const [ox, oy] = p.off || [0, 0];
@@ -96,7 +128,14 @@ function draw() {
     ctx.stroke();
     ctx.restore();
 
-    if (p.name) {
+    if (wf && !wf.ready) {
+      const [cx, cy] = L.centroid(p.poly);
+      const [px, py] = toPx(cx, cy);
+      ctx.font = `${11 * DPR}px ui-monospace, Menlo, monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255,190,110,0.9)';
+      ctx.fillText(wf.suspended ? 'hidden — bring that window forward' : 'opening…', px, py);
+    } else if (p.name) {
       const [cx, cy] = L.centroid(p.poly);
       const [px, py] = toPx(cx, cy);
       ctx.font = `${11 * DPR}px ui-monospace, Menlo, monospace`;
@@ -157,6 +196,9 @@ cv.addEventListener('pointerdown', e => {
   const p = L.paneAt(layout, x, y);
   cv.setPointerCapture(e.pointerId);
 
+  // With the picker open, a click selects rather than cuts: you are aiming
+  // at a piece, not making a new one.
+  if (picking) { if (p) { selected = p.id; say(`piece selected — now click a window`); } return; }
   if (tool === 'cut') { drag = { kind: 'cut', a: [x, y], b: [x, y] }; return; }
   if (tool === 'move') {
     if (!p) return;
@@ -212,6 +254,56 @@ function punchAt(x, y) {
 
 function say(s) { status = s; }
 
+// ------------------------------------------------------------ window picker
+// Click a piece with this open and that window goes into it. The list is the
+// daemon's, which is ScreenCaptureKit's, which includes windows that are
+// currently buried — those are exactly the ones you want to pull into a
+// collage, even if they cannot stream until they are visible.
+const pick = document.getElementById('pick');
+let picking = false;
+
+async function openPicker() {
+  picking = true;
+  pick.classList.add('on');
+  pick.innerHTML = '<div class="ph">loading windows…</div>';
+  let ws = [];
+  try {
+    const j = await (await fetch('/windows', { cache: 'no-store' })).json();
+    ws = j.windows || [];
+    if (j.error) throw new Error(j.error);
+  } catch (e) {
+    pick.innerHTML = `<div class="ph">could not list windows</div>`
+                   + `<div class="perr">${String(e.message || e)}</div>`;
+    return;
+  }
+  pick.innerHTML = '<div class="ph">click a piece, then a window</div>'
+    + '<div class="prow none" data-id="0">— the screen underneath —</div>'
+    + ws.map(w => `<div class="prow${w.onScreen ? '' : ' off'}" data-id="${w.id}">`
+        + `<b>${esc(w.app)}</b>${w.title ? ' · ' + esc(w.title.slice(0, 42)) : ''}`
+        + `<span class="pdim">${w.w}×${w.h}${w.onScreen ? '' : ' · hidden'}</span></div>`).join('');
+  for (const row of pick.querySelectorAll('.prow')) {
+    row.onclick = () => {
+      if (!selected) { say('select a piece first — use move, then click one'); return; }
+      const p = layout.panes.find(q => q.id === selected);
+      if (!p) return;
+      const id = +row.dataset.id;
+      if (!id) { p.source = null; p.name = ''; say('piece shows the screen again'); }
+      else {
+        const w = ws.find(x => x.id === id);
+        p.source = { t: 'window', id, app: w.app, title: w.title };
+        p.name = w.app;
+        feedFor(id);
+        say(`${w.app} → this piece`);
+      }
+      reapFeeds();
+    };
+  }
+}
+function closePicker() { picking = false; pick.classList.remove('on'); }
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+document.getElementById('windows').onclick = () => (picking ? closePicker() : openPicker());
+
 // ------------------------------------------------------------------- tools
 for (const b of document.querySelectorAll('[data-tool]')) {
   b.onclick = () => {
@@ -257,7 +349,12 @@ $('#load').onclick = async () => {
     if (!r.ok) { say('nothing saved yet'); return; }
     layout = L.fromJSON(await r.json());
     selected = null;
-    say(`loaded ${layout.panes.length} pieces`);
+    // Open the windows the layout asks for, rather than waiting for the
+    // first frame to notice they are missing.
+    for (const p of layout.panes) if (p.source && p.source.t === 'window') feedFor(p.source.id);
+    reapFeeds();
+    const wins = layout.panes.filter(p => p.source && p.source.t === 'window').length;
+    say(`loaded ${layout.panes.length} pieces${wins ? `, ${wins} with windows` : ''}`);
   } catch (e) { say('load failed: ' + e.message); }
 };
 
@@ -265,6 +362,7 @@ addEventListener('keydown', e => {
   if (e.key === 'Backspace' || e.key === 'Delete') {
     if (selected && L.removePane(layout, selected)) { selected = null; say('removed a piece'); }
   }
+  if (e.key === 'Escape' && picking) closePicker();
   if (e.key === ']') { if (selected) { L.raisePane(layout, selected); say('brought to the front'); } }
 });
 
@@ -278,6 +376,7 @@ window.papercut = {
     for (const p of [...layout.panes]) if (L.cutPane(layout, p.id, ax, ay, bx, by)) n++; return n; },
   punch: (kind, x, y, r = 0.13) =>
     L.punch(layout, PUNCH[kind](x, y, r, W / H), kind),
+  feed: id => feedFor(id),
 };
 
 draw();

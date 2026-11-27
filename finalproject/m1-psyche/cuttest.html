@@ -18,6 +18,19 @@ f.onload = () => setTimeout(() => {
   pc.punch('hexagon', 0.55, 0.30, 0.11);
   pc.punch('star',    0.20, 0.72, 0.10);
   pc.punch('circle',  0.84, 0.26, 0.09);
+  // Stage two: put real windows into the pieces.
+  fetch('/windows').then(r => r.json()).then(j => {
+    const ws = (j.windows || []).filter(w => w.onScreen).slice(0, 2);
+    const panes = pc.layout.panes.filter(p => !p.placed);
+    ws.forEach((w, i) => {
+      const p = panes[i];
+      if (!p) return;
+      p.source = { t: 'window', id: w.id, app: w.app, title: w.title };
+      p.name = w.app;
+      f.contentWindow.papercut.feed(w.id);
+    });
+    document.title = `${ws.length} windows placed`;
+  });
   const n = pc.layout.panes.length;
   const area = pc.layout.panes.reduce((s,p)=>s+Math.abs(pc.L.area(p.poly)),0);
   document.title = `${n} pieces, ${(area*100).toFixed(2)}% of the sheet`;

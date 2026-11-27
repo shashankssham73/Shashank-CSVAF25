@@ -147,7 +147,11 @@ export class ScreenCapture {
 // and no permission needed from the browser at all — it is the daemon's
 // helper that holds Screen Recording, not this page.
 export class NativeFeed {
-  constructor() {
+  // `win` targets one window instead of the whole display. Everything else
+  // is identical, which is the point: a pane showing one window and a page
+  // showing the whole screen run the same code.
+  constructor(win = 0) {
+    this.win = win || 0;
     this.active = false;
     this.error = '';
     this.bmp = null;
@@ -166,7 +170,7 @@ export class NativeFeed {
     this.error = ''; this.endedAt = 0; this.frames = 0;
     try {
       const q = new URLSearchParams({
-        width: String(opts.width || 1470),
+        width: String(opts.width || (this.win ? 900 : 1470)),
         fps: String(opts.fps || 30),
         quality: String(opts.quality || 0.6),
         // Exclude whatever is showing the result. The overlay is the usual
@@ -174,6 +178,7 @@ export class NativeFeed {
         // the render feeds on itself exactly as before.
         exclude: opts.exclude || 'hud-panel',
       });
+      if (this.win) q.set('win', String(this.win));
       const r = await fetch('/screen/start?' + q, { cache: 'no-store' });
       const j = await r.json();
       if (!j.started && !j.running) {
@@ -196,15 +201,22 @@ export class NativeFeed {
   async _pump(gen) {
     while (this.active && gen === this._gen) {
       try {
-        const r = await fetch('/screen.jpg', { cache: 'no-store' });
+        const r = await fetch('/screen.jpg' + (this.win ? '?win=' + this.win : ''),
+                              { cache: 'no-store' });
         if (!r.ok) {
-          let why = 'feed stopped';
-          try { why = (await r.json()).error || why; } catch (_) {}
+          let why = 'feed stopped', suspended = false;
+          try { const j = await r.json(); why = j.error || why; suspended = !!j.suspended; } catch (_) {}
           this.error = why;
+          this.suspended = suspended;
+          // A hidden window has no frames to give and never will until it is
+          // brought forward. That is not a failure to stop the feed over —
+          // wait and try again, so it comes back by itself.
+          if (suspended) { await new Promise(r2 => setTimeout(r2, 700)); continue; }
           this.endedAt = Date.now();
           this.stop(true);
           return;
         }
+        this.suspended = r.headers.get('X-Feed-Suspended') === '1';
         const bmp = await createImageBitmap(await r.blob());
         if (!this.active || gen !== this._gen) { bmp.close && bmp.close(); return; }
         if (this.bmp && this.bmp.close) this.bmp.close();
@@ -228,7 +240,8 @@ export class NativeFeed {
     if (this.bmp && this.bmp.close) this.bmp.close();
     this.bmp = null;
     this.w = this.h = 0;
-    fetch('/screen/stop', { cache: 'no-store' }).catch(() => {});
+    fetch('/screen/stop' + (this.win ? '?win=' + this.win : ''),
+          { cache: 'no-store' }).catch(() => {});
     if (this.onchange) this.onchange();
   }
 
@@ -236,8 +249,9 @@ export class NativeFeed {
 
   get label() {
     if (!this.active) return this.error || 'not capturing';
+    if (this.suspended) return 'hidden — bring the window forward';
     if (!this.ready) return 'starting…';
-    return `${this.w}x${this.h} native`;
+    return `${this.w}x${this.h}${this.win ? ' window' : ' native'}`;
   }
 
   draw(ctx, w, h) {

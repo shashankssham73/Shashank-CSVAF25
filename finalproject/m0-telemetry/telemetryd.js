@@ -474,29 +474,84 @@ const axCache = {};
 // getDisplayMedia captures everything, including the window showing the
 // processed result, so the effect photographs itself. ScreenCaptureKit can
 // exclude named applications; the browser API cannot.
-const screenFeed = { child:null, latest:null, at:0, waiters:[], err:'', frames:0 };
+// One feed per thing being captured: 'screen' for the whole display, or
+// 'w<id>' for a single window. A collage with four windows in it runs four
+// streams, which is why each is started on demand and stopped when nobody
+// has asked for a frame in a while.
+const feeds = new Map();
+const FEED_IDLE_MS = 15000;
+
+function feedKey(win) { return win ? 'w' + win : 'screen'; }
+
+// Starting several SCStreams in the same instant makes some of them fail
+// with "application connection being interrupted" — three at once reliably
+// loses one or two. They are started one at a time, a short way apart, and
+// a feed that dies on its own is tried again a couple of times before being
+// given up on. A collage with four windows in it depends on this.
+const START_GAP_MS = 450;
+let startQueue = Promise.resolve();
+function queueStart(fn) {
+  startQueue = startQueue.then(() => new Promise(res => {
+    try { fn(); } catch (_) {}
+    setTimeout(res, START_GAP_MS);
+  }));
+}
+
+function getFeed(key) {
+  let f = feeds.get(key);
+  if (!f) {
+    f = { child:null, latest:null, at:0, waiters:[], err:'', frames:0, asked:Date.now(), suspended:false };
+    feeds.set(key, f);
+  }
+  f.asked = Date.now();
+  return f;
+}
+
+// A pane that has gone away stops asking, and its stream should not keep
+// running for the rest of the session.
+setInterval(() => {
+  for (const [key, f] of feeds) {
+    if (f.child && Date.now() - f.asked > FEED_IDLE_MS) {
+      try { f.child.kill('SIGTERM'); } catch (_) {}
+      f.child = null;
+      console.log('[screen-feed] ' + key + ' idle, stopped');
+    }
+  }
+}, 5000).unref?.();
 
 function screenFeedStart(opts = {}) {
-  if (screenFeed.child) return true;
+  const win = opts.win ? String(opts.win).replace(/\D/g, '') : '';
+  const key = feedKey(win);
+  const f = getFeed(key);
+  if (f.child) return true;
   const bin = path.join(ROOT, '..', 'm1-desktop', 'bin', 'screen-feed');
   if (!fs.existsSync(bin)) {
-    screenFeed.err = 'screen-feed is not built — run ./build.sh';
+    f.err = 'screen-feed is not built — run ./build.sh';
     return false;
   }
-  const args = ['--width',   String(Math.min(2560, Math.max(320, +opts.width   || 1470))),
+  const args = ['--width',   String(Math.min(2560, Math.max(160, +opts.width   || (win ? 900 : 1470)))),
                 '--fps',     String(Math.min(60,   Math.max(1,   +opts.fps     || 30))),
                 '--quality', String(Math.min(0.95, Math.max(0.2, +opts.quality || 0.6)))];
-  // Exclude whatever is displaying the result: the overlay by default, or a
-  // browser name when the render is running in an ordinary tab.
-  for (const name of String(opts.exclude || 'hud-panel').split(',')) {
+  if (win) args.push('--window', win);
+  else for (const name of String(opts.exclude || 'hud-panel').split(',')) {
     const n = name.trim();
     if (n) args.push('--exclude', n);
   }
-  screenFeed.err = '';
-  screenFeed.frames = 0;
+  f.err = ''; f.frames = 0; f.suspended = false;
+  f.args = args;
+  f.tries = (f.tries || 0);
 
+  // Claim the slot synchronously so two requests cannot both queue a start
+  // for the same feed, then actually spawn when the queue reaches us.
+  f.child = true;
+  queueStart(() => spawnFeed(key, f, bin, args));
+  return true;
+}
+
+function spawnFeed(key, f, bin, args) {
+  if (f.child && f.child !== true) return;
   const p = spawn(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] });
-  screenFeed.child = p;
+  f.child = p;
 
   // Reassemble the length-prefixed frames: a frame can arrive in pieces, and
   // several can arrive in one chunk.
@@ -506,32 +561,54 @@ function screenFeedStart(opts = {}) {
     for (;;) {
       if (buf.length < 4) break;
       const n = buf.readUInt32BE(0);
-      if (n > 32 * 1024 * 1024) { buf = Buffer.alloc(0); break; }    // desync guard
+      if (n > 32 * 1024 * 1024) { buf = Buffer.alloc(0); break; }
       if (buf.length < 4 + n) break;
-      screenFeed.latest = buf.subarray(4, 4 + n);
-      screenFeed.at = Date.now();
-      screenFeed.frames++;
+      f.latest = buf.subarray(4, 4 + n);
+      f.at = Date.now();
+      f.frames++;
+      f.suspended = false;
+      f.tries = 0;
       buf = buf.subarray(4 + n);
-      for (const w of screenFeed.waiters.splice(0)) w();
+      for (const w of f.waiters.splice(0)) w();
     }
   });
   p.stderr.on('data', d => {
     const s = String(d).trim();
-    if (s) { screenFeed.err = s.split('\n').pop(); console.log('[screen-feed]', s); }
+    if (!s) return;
+    const last = s.split('\n').pop();
+    if (/SUSPENDED/.test(s)) f.suspended = true;
+    if (/resumed/.test(s)) f.suspended = false;
+    f.err = last;
+    console.log('[screen-feed:' + key + ']', s);
   });
-  p.on('close', code => {
-    screenFeed.child = null;
-    if (code) console.log('[screen-feed] exited', code);
-    for (const w of screenFeed.waiters.splice(0)) w();
+  // A child killed by a signal reports code null, not a number. Guarding on
+  // `code` alone treated every crash as a clean exit, so a feed that died —
+  // which is the whole reason the retry exists — was never restarted.
+  p.on('close', (code, signal) => {
+    f.child = null;
+    for (const w of f.waiters.splice(0)) w();
+    if (code === 0 && !signal) return;
+    console.log('[screen-feed:' + key + '] exited', signal ? 'on ' + signal : 'code ' + code);
+    // Only retry while something is still asking for this feed, and only a
+    // couple of times: a window that has been closed exits every time, and
+    // respawning it forever would be a loop nobody can see.
+    if (Date.now() - f.asked < FEED_IDLE_MS && ++f.tries <= 2) {
+      console.log('[screen-feed:' + key + '] retrying (' + f.tries + ')');
+      f.child = true;
+      queueStart(() => spawnFeed(key, f, bin, args));
+    }
   });
-  p.on('error', e => { screenFeed.err = String(e.message || e); screenFeed.child = null; });
-  return true;
+  p.on('error', e => { f.err = String(e.message || e); f.child = null; });
 }
 
-function screenFeedStop() {
-  if (screenFeed.child) { try { screenFeed.child.kill('SIGTERM'); } catch (_) {} }
-  screenFeed.child = null;
-  screenFeed.latest = null;
+function screenFeedStop(win) {
+  const keys = win === undefined ? [...feeds.keys()] : [feedKey(String(win).replace(/\D/g, ''))];
+  for (const k of keys) {
+    const f = feeds.get(k);
+    if (!f) continue;
+    if (f.child) { try { f.child.kill('SIGTERM'); } catch (_) {} }
+    f.child = null; f.latest = null;
+  }
 }
 
 function handleScreenFeed(url, res) {
@@ -539,17 +616,52 @@ function handleScreenFeed(url, res) {
     res.writeHead(code, { 'Content-Type':'application/json', 'Cache-Control':'no-store' });
     res.end(JSON.stringify(o));
   };
+  const win = url.searchParams.get('win') || '';
+  const key = feedKey(win.replace(/\D/g, ''));
+
+  // ---- what windows are there ------------------------------------------
+  if (url.pathname === '/windows') {
+    const bin = path.join(ROOT, '..', 'm1-desktop', 'bin', 'screen-feed');
+    if (!fs.existsSync(bin)) return json({ error:'screen-feed is not built — run ./build.sh' }, 503);
+    const p = spawn(bin, ['--list']);
+    let out = '', err = '';
+    const kill = setTimeout(() => { try { p.kill('SIGKILL'); } catch (_) {} }, 6000);
+    p.stdout.on('data', d => { out += d; });
+    p.stderr.on('data', d => { err += d; });
+    p.on('close', () => {
+      clearTimeout(kill);
+      try { json(JSON.parse(out)); }
+      catch (_) { json({ windows: [], error: err.trim() || 'could not list windows' }, 503); }
+    });
+    p.on('error', e => { clearTimeout(kill); json({ windows: [], error: String(e.message || e) }, 503); });
+    return;
+  }
+
+  const f = feeds.get(key);
   const status = () => ({
-    running: !!screenFeed.child,
-    frames: screenFeed.frames,
-    ageMs: screenFeed.at ? Date.now() - screenFeed.at : null,
-    error: screenFeed.err || '',
+    key,
+    running: !!(f && f.child),
+    frames: f ? f.frames : 0,
+    ageMs: f && f.at ? Date.now() - f.at : null,
+    // A hidden window is not an error. Saying so is the difference between
+    // "this is broken" and "bring that window forward".
+    suspended: !!(f && f.suspended),
+    error: f ? f.err || '' : '',
   });
 
-  if (url.pathname === '/screen/status') return json(status());
-  if (url.pathname === '/screen/stop')   { screenFeedStop(); return json(status()); }
-  if (url.pathname === '/screen/start')  {
+  if (url.pathname === '/screen/status') {
+    if (url.searchParams.get('all') === '1') {
+      return json({ feeds: [...feeds.keys()].map(k => {
+        const g = feeds.get(k);
+        return { key:k, running:!!g.child, frames:g.frames, suspended:!!g.suspended };
+      }) });
+    }
+    return json(status());
+  }
+  if (url.pathname === '/screen/stop')  { screenFeedStop(win || undefined); return json(status()); }
+  if (url.pathname === '/screen/start') {
     const started = screenFeedStart({
+      win,
       width:   url.searchParams.get('width'),
       fps:     url.searchParams.get('fps'),
       quality: url.searchParams.get('quality'),
@@ -558,27 +670,32 @@ function handleScreenFeed(url, res) {
     return json({ ...status(), started });
   }
 
-  // /screen.jpg — held open until the NEXT frame lands, so the client is
-  // paced by the capture rather than by a guessed polling interval.
-  if (!screenFeed.child && !screenFeedStart({})) {
-    return json({ error: screenFeed.err || 'screen feed unavailable' }, 503);
+  // ---- /screen.jpg — the next frame, not the last one -------------------
+  const g = getFeed(key);
+  if (!g.child && !screenFeedStart({ win })) {
+    return json({ error: g.err || 'screen feed unavailable' }, 503);
   }
   const send = () => {
-    if (!screenFeed.latest) {
-      return json({ error: screenFeed.err
-        || 'no frame yet — is Screen Recording granted to the daemon?' }, 503);
+    if (!g.latest) {
+      return json({ error: g.err
+        || 'no frame yet — is Screen Recording granted to the daemon?',
+        suspended: !!g.suspended }, 503);
     }
     res.writeHead(200, { 'Content-Type':'image/jpeg',
-                         'Content-Length': screenFeed.latest.length,
+                         'Content-Length': g.latest.length,
+                         'X-Feed-Suspended': g.suspended ? '1' : '0',
                          'Cache-Control':'no-store' });
-    res.end(screenFeed.latest);
+    res.end(g.latest);
   };
-  if (url.searchParams.get('next') === '0' && screenFeed.latest) return send();
+  // A suspended window will never produce another frame until it is visible,
+  // so waiting for one would hang every pane showing a hidden window. Send
+  // what we have and let the caller pace itself.
+  if (url.searchParams.get('next') === '0' || (g.suspended && g.latest)) return send();
 
   let done = false;
   const fire = () => { if (done) return; done = true; clearTimeout(t); send(); };
-  const t = setTimeout(fire, 2000);                  // never hold a socket forever
-  screenFeed.waiters.push(fire);
+  const t = setTimeout(fire, 2000);
+  g.waiters.push(fire);
   res.on('close', () => { done = true; clearTimeout(t); });
 }
 
@@ -753,7 +870,8 @@ const handler = (req, res) => {
 
   // ---- the real screen, minus our own overlay --------------------------
   if (url.pathname === '/screen.jpg'   || url.pathname === '/screen/start'
-   || url.pathname === '/screen/stop'  || url.pathname === '/screen/status') {
+   || url.pathname === '/screen/stop'  || url.pathname === '/screen/status'
+   || url.pathname === '/windows') {
     handleScreenFeed(url, res);
     return;
   }
